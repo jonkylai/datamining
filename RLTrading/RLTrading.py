@@ -1,34 +1,38 @@
-import pandas as pd
-import re
+from RLUtil import *
+from SavedQueries import *
 
-import requests
-from bs4 import BeautifulSoup
-
-from ItemPost import ItemPost
 
 def main():
-    splash = { 'filterItem'          : '1975',
-               'filterPlatform'      : '1',
-               'filterSearchType'    : '1',
-               'filterCertification' : 'N',
-               'filterPaint'         : 'N',
-               'filterItemType'      : '0' }
+    # Create list of query options
+    query_list = all_queries
+    query_length = len(query_list)
 
-    page = requests.get( 'https://rocket-league.com/trading', params=splash )
-    page_soup = BeautifulSoup( page.content, 'html.parser' )
-    has_list  = page_soup.find_all( 'div', {'id' : 'rlg-youritems'}  )
-    want_list = page_soup.find_all( 'div', {'id' : 'rlg-theiritems'} )
+    # Print options
+    print('Existing queries:')
+    for i in range(query_length):
+        print( '%i. %s' % (i + 1, query_list[i].name) )
 
-    # Check if parsing correctly counted number of posts
-    if len(has_list) != len(want_list):
-        print("ERROR: Length of item_has and item_want do not match")
+    # Prompt user
+    user_input = input('Enter query: ')
+    try:
+        user_input = int(user_input)
+    except ValueError:
+        user_input = -1
+
+    user_query = None
+    for i in range(query_length):
+        if user_input == i + 1:
+            user_query = query_list[i]
+
+    # Add functionality later
+    if user_query is None:
         exit()
 
-    # Loop over each listing
-    for i in range(len(has_list)):
-        item_has  = ItemPost( has_list[i] )
-        item_want = ItemPost( want_list[i] )
-        exit()
+    results = RLTrades(user_query)
+
+    return 0
+
 
 if __name__ == "__main__":
     main()
+
