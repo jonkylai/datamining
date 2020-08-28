@@ -1,7 +1,8 @@
 from RLUtil import Query
 
+
 optimize = Query()
-optimize.name = 'Optimize All'
+optimize.key = 'Optimize All'
 optimize.action = 'Optimize'
 optimize.max_search = 15
 optimize.params = {'filterItem': '2615',
@@ -12,9 +13,8 @@ optimize.params = {'filterItem': '2615',
                    'filterItemType': '0'}
 
 splash = Query()
-splash.name = 'Splash'
+splash.key = 'Big Splash limited'
 splash.action = 'Watch'
-splash.key = 'Big Splash --limited'
 splash.max_search = 3
 splash.params = {'filterItem': '1975',
                  'filterPlatform': '1',
@@ -24,9 +24,8 @@ splash.params = {'filterItem': '1975',
                  'filterItemType': '0'}
 
 gravity = Query()
-gravity.name = 'Gravity'
+gravity.key = 'Gravity Bomb black-market'
 gravity.action = 'Watch'
-gravity.key = 'Gravity Bomb --black-market'
 gravity.max_search = 3
 gravity.params = {'filterItem': '2948',
                   'filterPlatform': '1',
@@ -36,9 +35,8 @@ gravity.params = {'filterItem': '2948',
                   'filterItemType': '0'}
 
 stellar = Query()
-stellar.name = 'Interstellar'
+stellar.key = 'Interstellar black-market'
 stellar.action = 'Watch'
-stellar.key = 'Interstellar (Black Market) --black-market'
 stellar.max_search = 3
 stellar.params = {'filterItem': '2944',
                   'filterPlatform': '1',
@@ -47,16 +45,26 @@ stellar.params = {'filterItem': '2944',
                   'filterPaint': 'N',
                   'filterItemType': '0'}
 
+dueling = Query()
+dueling.key = 'Tidal Stream black-market'
+dueling.action = 'Watch'
+dueling.max_search = 3
+dueling.params = {'filterItem': '2807',
+                  'filterPlatform': '1',
+                  'filterSearchType': '0',
+                  'filterCertification': 'N',
+                  'filterPaint': 'N',
+                  'filterItemType': '0'}
+
 single = Query()
-single.name = 'Random'
+single.key = 'Octane Crimson common'  # keyword
 single.action = 'Single'
-single.key = 'Dissolver (Black Market) --black-market'
 single.max_search = 3
-single.params = {'filterItem': '1175',
+single.params = {'filterItem': '1',  # item number
                  'filterPlatform': '1',
                  'filterSearchType': '0',
                  'filterCertification': 'N',
-                 'filterPaint': '0',
+                 'filterPaint': '0',  # paint number
                  'filterItemType': '0'}
 
-all_queries = [ optimize, single, splash, gravity, stellar ]
+all_queries = [ optimize, single, splash, gravity, stellar, dueling ]
