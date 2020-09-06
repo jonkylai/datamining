@@ -1,41 +1,39 @@
-from RLUtil import *
-from RLDatabase import *
-from RLParser import *
-from RLExport import *
-from RLSpamFilter import *
-from SavedQueries import *
+from RLDatabase import ItemDatabase
+from RLParser import get_link, get_username, get_comment, get_item, get_container
+from RLUtil import Query, get_df_index, WATCH_DIR, MAX_ITEMS
+from RLExport import create_page
+from RLSpamFilter import spam_filter
+from SavedQueries import all_queries, single_query
 
 import requests
 import time
 import re
+import datetime
 
 from pandas import DataFrame
 from bs4 import BeautifulSoup
 
 
 class RLTrades:
-    """ Class that processes query using BeautifulSoup and regex
+    """ Class that processes query using regex and BeautifulSoup
         If page layout changes, *_text variables must be changed
         If page layout changes, RLParser class must be changed """
     def __init__(self, user_query: Query):
         # Stores query as local variables
         user_action = user_query.action
-        user_params = user_query.params
+        user_url = user_query.url
         user_key = user_query.key
         user_max = user_query.max_search
 
         # Initialize database of dictionaries
         database = ItemDatabase()
 
-        # Add page number to query params, where p is page number
-        user_params.update({'p': 0})
         # Begin data mining from user_max to page 1
         for i in range(user_max, 0, -1):
-            user_params['p'] = i
 
             # Benchmark requests.get() speed
             time_page = time.time()
-            page = requests.get('https://rocket-league.com/trading', params=user_params)
+            page = requests.get('%s&p=%i' % (user_url, i))
             print('--- %0.4f sec --- %s' % ( time.time() - time_page,
                                              page.url ) )
 
@@ -48,25 +46,26 @@ class RLTrades:
             for user_soup in user_list:
                 # Page keywords
                 url_text = user_soup.find_all('header', {'class': 'rlg-trade__header'})
-                username_text = user_soup.find_all('div', {'class': 'rlg-trade__username'})
-                comment_text = user_soup.find_all('div', {'class': 'rlg-trade__note'})
-                want_text = user_soup.find_all('div', {'class': 'rlg-trade__itemswants'})
-                has_text = user_soup.find_all('div', {'class': 'rlg-trade__itemshas'})
-
-                # Get constants from poster
                 post_link = get_link(url_text[0])
+
+                username_text = user_soup.find_all('a', {'class': 'rlg-trade__platform'})
                 post_username = get_username(username_text[0])
+
+                comment_text = user_soup.find_all('div', {'class': 'rlg-trade__note'})
                 if len(comment_text) > 0:
                     post_comment = get_comment(comment_text[0])
                 else:
                     post_comment = ''
 
                 # Gets Container for has and wants from poster
-                want_containers = get_container(want_text[0], post_link, post_username, post_comment)
-                has_containers  = get_container(has_text[0],  post_link, post_username, post_comment)
+                want_text = user_soup.find_all('div', {'class': 'rlg-trade__itemswants'})
+                want_container = get_container(want_text[0], post_link, post_username, post_comment)
+
+                has_text = user_soup.find_all('div', {'class': 'rlg-trade__itemshas'})
+                has_container  = get_container(has_text[0], post_link, post_username, post_comment)
 
                 # Use NLP to get poster's desired trades
-                [cost_list, price_list] = get_item(want_containers, has_containers)
+                [cost_list, price_list] = get_item(want_container, has_container)
 
                 # Store all data in dict
                 for cost_item in cost_list:
@@ -87,15 +86,23 @@ class RLTrades:
         self.df = self.df.sort_values('Possible Gain', ascending=False)
 
         # Export to both page and csv
-        create_page(self.df)
         self.df.to_csv('data.csv', index=False)
 
         # Execute user input action
         if user_action == 'Single':
+            create_page(self.df, 'Single')
+            # Use logic to determine item type from url
+            user_key = database.get_highest_freq()
             self.print_single(user_key)
+
         elif user_action == 'Watch':
+            create_page(self.df, 'General')
+            # Print item from query
             self.print_single(user_key)
             self.item_watch(user_key)
+
+        elif user_action == 'Optimize':
+            create_page(self.df, 'General')
 
     def print_single(self, user_key: str) -> None:
         """ Print out information from a single query
@@ -138,20 +145,16 @@ def main():
         print( '%i. %s' % (i + 1, query_list[i].key) )
 
     # Prompt user
-    user_input = input('Enter query: ')
+    user_input = input('Enter query or url: ')
+
+    # Preset input
     try:
-        user_input = int(user_input)
-    except ValueError:
-        user_input = -1
-
-    user_query = None
-    for i in range(query_length):
-        if user_input == i + 1:
-            user_query = query_list[i]
-
-    # Add functionality later
-    if user_query is None:
-        exit()
+        i = int(user_input)
+        user_query = query_list[i - 1]
+    # Manual input
+    except:
+        user_query = single_query
+        user_query.url = user_input
 
     results = RLTrades(user_query)
 

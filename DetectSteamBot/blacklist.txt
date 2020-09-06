@@ -1,0 +1,9 @@
+# Ignore list
+#https://steamcommunity.com/profiles/76561198364605509
+https://steamcommunity.com/profiles/76561199022952115
+https://steamcommunity.com/profiles/76561198312066176
+
+# Truth bot list
+https://steamcommunity.com/profiles/76561198953413144
+https://steamcommunity.com/profiles/76561198824549149
+https://steamcommunity.com/profiles/76561198297037377

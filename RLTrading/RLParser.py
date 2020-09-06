@@ -1,11 +1,23 @@
-from RLUtil import int_cast, MAX_VALUE
+from RLUtil import int_cast, BASE_URL, MAX_VALUE
 from bs4 import BeautifulSoup
 
 import copy
 
 
+def get_text_between(string_in: str, begin_in: str, end_in: str) -> str:
+    """ Parses text by stripping text before and after
+        Error checking included """
+    try:
+        string_out = string_in.split(begin_in)[-1]
+        string_out = string_out.split(end_in)[0]
+        return string_out
+    except:
+        print('ERROR: Cannot find %s or %s from input text below' % (begin_in, end_in))
+        print('       %s' % string_in)
+
+
 def get_link(soup_text: BeautifulSoup) -> str:
-    """ Grabs the link so items are traceable """
+    """ Grabs the post link so items are traceable """
     search_text = '/trade/'
     for line in soup_text.prettify().split():
         if search_text in line:
@@ -17,7 +29,7 @@ def get_link(soup_text: BeautifulSoup) -> str:
 
 def get_username(soup_text: BeautifulSoup) -> str:
     """ Grabs username for spam filtering """
-    return soup_text.text.strip()
+    return get_text_between(soup_text.prettify(), 'phishingAware(\'', '\');')
 
 
 def get_comment(soup_text: BeautifulSoup) -> str:
@@ -25,57 +37,53 @@ def get_comment(soup_text: BeautifulSoup) -> str:
     return soup_text.text.strip()
 
 
-def get_item(want_containers: list, has_containers: list) -> (list, list):
+def get_item(want_container: list, has_container: list) -> (list, list):
     """ Processes the poster's intentions to get the inherent value of an item """
     cost_list = list()
     price_list = list()
 
     # Processing if user requests 1:1 trade
-    if len(has_containers) == len(want_containers):
+    if len(has_container) == len(want_container):
 
-        for i in range( len(has_containers) ):
+        for i in range( len(has_container) ):
             # Create empty item
             poster_item = dict( name        = '',
                                 description = '',
-                                value       = -MAX_VALUE )
-            poster_item['link'] = has_containers[i]['link']
+                                value       = 0 )
 
             # If poster is selling
-            if has_containers[i]['name'] != 'Credits' and want_containers[i]['name'] == 'Credits':
-                poster_item['name'] = '%s %s %s' % ( has_containers[i]['name'],
-                                                     has_containers[i]['color'],
-                                                     has_containers[i]['rarity'] )
-
-                poster_item['description'] = [ has_containers[i]['link'],
-                                               has_containers[i]['username'],
-                                               has_containers[i]['comment'] ]
-
-                # Remove extra white space
-                poster_item['name'] = ' '.join( poster_item['name'].split() )
-                # Divide if poster requests multiple items
-                poster_item['value'] = round(want_containers[i]['count'] / has_containers[i]['count'], 1)
-
-                cost_list.append(poster_item)
+            if has_container[i]['name'] != 'Credits' and want_container[i]['name'] == 'Credits':
+                container = has_container
+                value = want_container[i]['count'] / has_container[i]['count']
 
             # If poster buying
-            if has_containers[i]['name'] == 'Credits' and want_containers[i]['name'] != 'Credits':
-                poster_item['name'] = '%s %s %s' % ( want_containers[i]['name'],
-                                                     want_containers[i]['color'],
-                                                     want_containers[i]['rarity'] )
+            elif has_container[i]['name'] == 'Credits' and want_container[i]['name'] != 'Credits':
+                container = want_container
+                value = has_container[i]['count'] / want_container[i]['count']
 
-                poster_item['description'] = [ want_containers[i]['link'],
-                                               want_containers[i]['username'],
-                                               want_containers[i]['comment'] ]
-
-                # Remove extra white space
-                poster_item['name'] = ' '.join( poster_item['name'].split() )
-                # Divide if poster requests multiple items
-                poster_item['value'] = round(has_containers[i]['count'] / want_containers[i]['count'], 1)
-
-                price_list.append(poster_item)
-
+            # Do not append if criteria not met
             else:
-                pass
+                continue
+
+            # Assign values to item
+            poster_item['description'] = [ container[i]['post_link'],
+                                           container[i]['item_link'],
+                                           container[i]['username'],
+                                           container[i]['comment'] ]
+
+            poster_item['value'] = round(value, 1)
+
+            poster_item['name'] = '%s %s %s' % ( container[i]['name'],
+                                                 container[i]['color'],
+                                                 container[i]['rarity'] )
+            # Remove extra white space
+            poster_item['name'] = ' '.join( poster_item['name'].split() )
+
+            # Append
+            if container is has_container:
+                cost_list.append(poster_item)
+            elif container is want_container:
+                price_list.append(poster_item)
 
     else:
         # Add NLP and others methods later
@@ -92,8 +100,9 @@ def get_container(soup_text: BeautifulSoup, link_in: str, username_in: str, comm
                             color = '',
                             rarity = '',
                             count = 1,
-                            link  = '',
+                            post_link  = '',
                             username = '',
+                            item_link = '',
                             comment = '' )
     name_flag = False
     cert_flag = False
@@ -101,19 +110,26 @@ def get_container(soup_text: BeautifulSoup, link_in: str, username_in: str, comm
 
     for line in soup_text.prettify().split('\n'):
 
-        # Rarity keyword
-        if 'rlg-item__gradient' in line:
+        # Item link keyword
+        if 'rlg-item --' in line:
             # Initialize because this is the first keyword for each item
             container_list.append( copy.deepcopy(empty_container) )
-            container_list[-1]['link'] = link_in
+            container_list[-1]['post_link'] = link_in
             container_list[-1]['username'] = username_in
             container_list[-1]['comment'] = comment_in
-            # Assign rarity
-            container_list[-1]['rarity'] = line.split('--')[-1].split('\"')[0]
+
+            # Assign item link with filter search of zero
+            container_list[-1]['item_link'] = '%s%s%s' % ( BASE_URL,
+                                                           get_text_between(line, 'href=\"', '\">'),
+                                                           '&filterSearchType=0' )
+
+        # Rarity keyword
+        if 'rlg-item__gradient' in line:
+            container_list[-1]['rarity'] = get_text_between(line, '--', '\"')
 
         # Color keyword
         elif 'rlg-item__paint' in line:
-            container_list[-1]['color'] = line.split('data-name=\"')[-1].split('\"')[0]
+            container_list[-1]['color'] = get_text_between(line, 'data-name=\"', '\"')
 
         # Name keyword
         elif 'rlg-item__name' in line:

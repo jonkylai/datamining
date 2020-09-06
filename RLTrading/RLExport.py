@@ -1,19 +1,36 @@
+from RLUtil import POST_LINK_INDEX, ITEM_LINK_INDEX
 from pandas import DataFrame
 
 
-def create_page(df_in: DataFrame) -> None:
+def create_page(df_in: DataFrame, type_in: str) -> None:
     """ Exports DataFrame to interactive web page for easiest consumption
         Web page is local and will be overwritten """
-    fid = open('RLTrading.html', 'w')
+    if type_in == 'General':
+        fid = open('RLTrading.html', 'w')
+    elif type_in == 'Single':
+        fid = open('RLTradingSingle.html', 'w')
+    else:
+        print('ERROR: Wrong input %s to create_page()' % type_in)
+        exit()
 
     # Static web tags
     content_header = """<!DOCTYPE html>
 <html>
 
 <head>
-<title>Data Mining Results</title>
+<style>
+body {
+    background-color: black;
+    color: white;
+}
+a:link {
+    color: grey;
+}
+a:visited {
+    color: green;
+}
+</style>
 </head>
-
 <body>
 """
     content_footer = """
@@ -48,13 +65,15 @@ def create_page_row(list_in: list) -> str:
     content_table.append('<tr>')
 
     for i, val in enumerate(list_in):
-        # First 2 columns have no link
-        if i < 2:
+        # First column has link of item
+        if i == 0:
+            content_table.append('  <td><a href="%s">%s</a></td>' % (list_in[3][ITEM_LINK_INDEX], val))
+        elif i == 1:
             content_table.append('  <td>%s</td>' % val)
         # Every column has a link in second element
         elif i % 2 == 0:
             # The zeroth item in description holds poster link
-            content_table.append('  <td><a href="%s">%s</a></td>' % (list_in[i + 1][0], val))
+            content_table.append('  <td><a href="%s">%s</a></td>' % (list_in[i + 1][POST_LINK_INDEX], val))
 
     # End tag
     content_table.append('</tr>')

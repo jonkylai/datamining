@@ -1,4 +1,4 @@
-from RLUtil import MAX_VALUE, MAX_ITEMS, DESCRIPTION_INDEX, USERNAME_INDEX
+from RLUtil import MAX_VALUE, MAX_ITEMS, DESCRIPTION_INDEX, POST_LINK_INDEX, USERNAME_INDEX
 from pandas import DataFrame
 
 
@@ -6,8 +6,10 @@ class ItemDatabase:
     """ Class that holds all items, which can be exported as a DataFrame
         Data is added using the add_price() and add_cost() functions """
     def __init__(self):
-        self.price_dict = {}
-        self.cost_dict = {}
+        self.cost_dict = dict()
+        self.price_dict = dict()
+        self.null_cost = [ MAX_VALUE, ['NULL', 'NULL', 'NULL'] ]
+        self.null_price = [-MAX_VALUE, ['NULL', 'NULL', 'NULL'] ]
 
     def add_cost(self, name: str, value: int, description: list) -> None:
         """ Stores cost information as dictionary
@@ -25,16 +27,30 @@ class ItemDatabase:
             self.price_dict[name] = list()
         self.price_dict[name].append( [value, description] )
 
-    def remove_username(self, username_in: str):
+    def remove_username(self, username_in: str) -> None:
         """ Removes any cost or price that contains username_in """
-        for key in self.cost_dict:
-            for i in range(len(self.cost_dict[key])):
-                if self.cost_dict[key][i][DESCRIPTION_INDEX][USERNAME_INDEX] is username_in:
-                    self.cost_dict[key][i] = [ MAX_VALUE, ['NULL', 'NULL', 'NULL'] ]
-        for key in self.price_dict:
-            for i in range(len(self.price_dict[key])):
-                if self.price_dict[key][i][DESCRIPTION_INDEX][USERNAME_INDEX] is username_in:
-                    self.price_dict[key][i] = [-MAX_VALUE, ['NULL', 'NULL', 'NULL'] ]
+        removed_link = False
+        user_dict_list = [self.cost_dict, self.price_dict]
+
+        for user_dict in user_dict_list:
+            # Loop over dictionaries for cost and price
+            for key in user_dict:
+                # Loop over lists in dictionary
+                for i in range(len(user_dict[key])):
+
+                    # Store description list and check username
+                    description = user_dict[key][i][DESCRIPTION_INDEX]
+                    if description[USERNAME_INDEX] == username_in:
+                        # Save link and replace cost or price
+                        removed_link = description[POST_LINK_INDEX]
+                        if user_dict is self.cost_dict:
+                            user_dict[key][i] = self.null_cost
+                        else:
+                            user_dict[key][i] = self.null_price
+
+        # Only print if username found
+        if removed_link is not False:
+            print('SPAM BOT: %s flagged as a bot %s' % (username_in, removed_link))
 
     def create_df(self) -> DataFrame:
         """ Creates DataFrame by combining dictionaries
@@ -64,8 +80,8 @@ class ItemDatabase:
 
             # Add extra elements to ensure minimum items exist
             for i in range(MAX_ITEMS):
-                self.cost_dict[key].append( [MAX_VALUE, ['NULL', 'NULL', 'NULL'] ] )
-                self.price_dict[key].append( [-MAX_VALUE, ['NULL', 'NULL', 'NULL'] ] )
+                self.cost_dict[key].append( self.null_cost )
+                self.price_dict[key].append( self.null_price)
 
             # Sort rows for optimal gains
             sorted_cost = sorted( self.cost_dict[key] )
@@ -91,4 +107,18 @@ class ItemDatabase:
         # Sort column by best prices
         return df_out.sort_values('Possible Gain', ascending=False)
 
+    def get_highest_freq(self) -> str:
+        """ Get the key for single type queries
+            Highest frequency item is used to check """
+        item_freq = 0
+        key_out = None
 
+        # Loop over all unique keys
+        unique_keys = set().union(self.cost_dict, self.price_dict)
+        for key in unique_keys:
+            count = len(self.cost_dict[key]) + len(self.price_dict[key])
+            if count > item_freq:
+                item_freq = count
+                key_out = key
+
+        return key_out

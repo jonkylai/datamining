@@ -1,22 +1,29 @@
 from pandas import DataFrame
+from os import path
 import pandas as pd
-import re
 import matplotlib
-import datetime
 
 
+""" All constants are stored in this utility file """
 # Number of posts to store per repeated item
 MAX_ITEMS = 4
 # Maximum value of item
 MAX_VALUE = 99999
-# Index of description in dictionary
+
+# Index in item list
+NAME_INDEX = 0
 DESCRIPTION_INDEX = 1
-# Index of link in description
-LINK_INDEX = 0
-# Index of username in description
-USERNAME_INDEX = 1
+# Index in description list
+POST_LINK_INDEX = 0
+ITEM_LINK_INDEX = 1
+USERNAME_INDEX = 2
+COMMENT_INDEX = 3
+# Name of blacklist file
+BLACKLIST_FILE = path.abspath(path.join(path.dirname(__file__), '..', 'DetectSteamBot', 'blacklist.txt'))
+# RL Trading url
+BASE_URL = 'https://rocket-league.com'
 # Watch list directory name
-WATCH_DIR = 'watchData'
+WATCH_DIR = 'watchlist'
 
 
 class Query:
@@ -48,4 +55,5 @@ def int_cast(user_in: str) -> int:
         exit()
     finally:
         pass
+
 
