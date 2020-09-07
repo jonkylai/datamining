@@ -1,5 +1,5 @@
 from RLDatabase import ItemDatabase
-from RLParser import get_link, get_username, get_comment, get_item, get_container
+from RLParser import get_link, get_time, get_username, get_comment, get_item, get_container
 from RLUtil import Query, get_df_index, WATCH_DIR, MAX_ITEMS
 from RLExport import create_page
 from RLSpamFilter import spam_filter
@@ -45,8 +45,10 @@ class RLTrades:
             # Loop over each item
             for user_soup in user_list:
                 # Page keywords
-                url_text = user_soup.find_all('header', {'class': 'rlg-trade__header'})
-                post_link = get_link(url_text[0])
+                header_text = user_soup.find_all('header', {'class': 'rlg-trade__header'})
+                post_link = get_link(header_text[0])
+                post_time = get_time(header_text[0])
+                #print(post_time)
 
                 username_text = user_soup.find_all('a', {'class': 'rlg-trade__platform'})
                 post_username = get_username(username_text[0])

@@ -27,6 +27,18 @@ def get_link(soup_text: BeautifulSoup) -> str:
     exit()
 
 
+def get_time(soup_text: BeautifulSoup) -> str:
+    """ Grabs the post time so old posts can be removed """
+    search_text = 'rlg-trade__time'
+    line_list = soup_text.prettify().split('\n')
+    for i, line in enumerate(line_list):
+        if search_text in line:
+            return line_list[i+2]
+
+    print('ERROR: Cannot find "%s" in soup_text' % search_text)
+    exit()
+
+
 def get_username(soup_text: BeautifulSoup) -> str:
     """ Grabs username for spam filtering """
     return get_text_between(soup_text.prettify(), 'phishingAware(\'', '\');')
