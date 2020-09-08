@@ -1,6 +1,6 @@
 from RLDatabase import ItemDatabase
 from RLParser import get_link, get_time, get_username, get_comment, get_item, get_container
-from RLUtil import Query, get_df_index, WATCH_DIR, MAX_ITEMS
+from RLUtil import Query, get_df_index, print_time, TIME_FORMAT, WATCH_DIR, MAX_ITEMS, PICKLE_FILE
 from RLExport import create_page
 from RLSpamFilter import spam_filter
 from SavedQueries import all_queries, single_query
@@ -8,34 +8,43 @@ from SavedQueries import all_queries, single_query
 import requests
 import time
 import re
-import datetime
+import os
+import pickle
 
+from datetime import datetime
 from pandas import DataFrame
 from bs4 import BeautifulSoup
+from os import path
 
 
 class RLTrades:
     """ Class that processes query using regex and BeautifulSoup
-        If page layout changes, *_text variables must be changed
-        If page layout changes, RLParser class must be changed """
-    def __init__(self, user_query: Query):
+        If page layout changes, RLParser functions must be changed """
+    def __init__(self, user_query: Query) -> None:
+        global benchmark_recorded
+
         # Stores query as local variables
         user_action = user_query.action
         user_url = user_query.url
         user_key = user_query.key
         user_max = user_query.max_search
 
-        # Initialize database of dictionaries
-        database = ItemDatabase()
+        # Initialize data
+        benchmark_time = time.time()
+        if path.exists(PICKLE_FILE):
+            database = pickle.load(open(PICKLE_FILE, 'rb'))
+            benchmark_recorded = print_time('Loaded pickled database', benchmark_time, benchmark_recorded)
+        else:
+            database = ItemDatabase()
+            benchmark_recorded = print_time('Created new database', benchmark_time, benchmark_recorded)
 
         # Begin data mining from user_max to page 1
         for i in range(user_max, 0, -1):
 
-            # Benchmark requests.get() speed
-            time_page = time.time()
+            # Get site data
+            benchmark_time = time.time()
             page = requests.get('%s&p=%i' % (user_url, i))
-            print('--- %0.4f sec --- %s' % ( time.time() - time_page,
-                                             page.url ) )
+            benchmark_recorded = print_time(page.url, benchmark_time, benchmark_recorded)
 
             page_soup = BeautifulSoup(page.content, 'html.parser')
 
@@ -45,26 +54,14 @@ class RLTrades:
             # Loop over each item
             for user_soup in user_list:
                 # Page keywords
-                header_text = user_soup.find_all('header', {'class': 'rlg-trade__header'})
-                post_link = get_link(header_text[0])
-                post_time = get_time(header_text[0])
-                #print(post_time)
-
-                username_text = user_soup.find_all('a', {'class': 'rlg-trade__platform'})
-                post_username = get_username(username_text[0])
-
-                comment_text = user_soup.find_all('div', {'class': 'rlg-trade__note'})
-                if len(comment_text) > 0:
-                    post_comment = get_comment(comment_text[0])
-                else:
-                    post_comment = ''
+                post_link = get_link(user_soup)
+                post_time = get_time(user_soup)
+                post_username = get_username(user_soup)
+                post_comment = get_comment(user_soup)
 
                 # Gets Container for has and wants from poster
-                want_text = user_soup.find_all('div', {'class': 'rlg-trade__itemswants'})
-                want_container = get_container(want_text[0], post_link, post_username, post_comment)
-
-                has_text = user_soup.find_all('div', {'class': 'rlg-trade__itemshas'})
-                has_container  = get_container(has_text[0], post_link, post_username, post_comment)
+                want_container = get_container('want', user_soup, post_link, post_time, post_username, post_comment)
+                has_container  = get_container('has', user_soup, post_link, post_time, post_username, post_comment)
 
                 # Use NLP to get poster's desired trades
                 [cost_list, price_list] = get_item(want_container, has_container)
@@ -79,13 +76,22 @@ class RLTrades:
                                         price_item['value'],
                                         price_item['description'] )
 
+        # Remove old data
+        benchmark_time = time.time()
+        database.remove_old()
+        benchmark_recorded = print_time('remove_old()', benchmark_time, benchmark_recorded)
+
+        # Save data
+        pickle.dump(database, open(PICKLE_FILE, 'wb'))
+
         # Create dataframe and organize
+        benchmark_time = time.time()
         self.df = database.create_df()
 
         # Remove all possible spam and recreate dataframe
         database = spam_filter(database, self.df)
         self.df = database.create_df()
-        self.df = self.df.sort_values('Possible Gain', ascending=False)
+        benchmark_recorded = print_time('spam_filter()', benchmark_time, benchmark_recorded)
 
         # Export to both page and csv
         self.df.to_csv('data.csv', index=False)
@@ -108,7 +114,7 @@ class RLTrades:
 
     def print_single(self, user_key: str) -> None:
         """ Print out information from a single query
-            This is useful for investing new potential """
+            This is useful for investing new potential items """
         print('\n')
         # Print item in question
         print('%s:' % user_key)
@@ -128,7 +134,7 @@ class RLTrades:
         file_name = ''.join( re.split(r'\s|\(|\)', file_name ) ) + '.dat'
 
         fid = open('%s/%s' % (WATCH_DIR, file_name), 'a')
-        now_date = datetime.datetime.now()
+        now_date = datetime.now().strftime(TIME_FORMAT)
         fid.write('%s,%f,%f,%f,%f\n' % ( now_date,
                                          row_df['Cost 0'],
                                          row_df['Cost %i' % (MAX_ITEMS - 1)],
@@ -149,16 +155,25 @@ def main():
     # Prompt user
     user_input = input('Enter query or url: ')
 
-    # Preset input
+    # Time total benchmark time except those documented by print_time()
+    global benchmark_recorded
+    benchmark_recorded = 0
+    benchmark_all = time.time()
+
     try:
+        # Preset input
         i = int(user_input)
         user_query = query_list[i - 1]
-    # Manual input
     except:
+        # Manual input
         user_query = single_query
         user_query.url = user_input
 
-    results = RLTrades(user_query)
+    # Do everything else
+    RLTrades(user_query)
+
+    print('Time spent on recorded activites: %0.4f' % benchmark_recorded)
+    print('Time spent on everything else:    %0.4f' % (time.time() - benchmark_all - benchmark_recorded))
 
     return 0
 

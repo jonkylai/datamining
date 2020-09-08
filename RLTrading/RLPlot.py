@@ -1,11 +1,12 @@
 import matplotlib.pyplot as plt
 import numpy as np
-import os
+
+from os import listdir
 
 
 def plot_watchlist(dir_in: str) -> None:
     # Loop over dat ascii files
-    for file in os.listdir(dir_in):
+    for file in listdir(dir_in):
         data = []
         file_path = '%s/%s' % (dir_in, file)
         print(np.loadtxt(file_path))

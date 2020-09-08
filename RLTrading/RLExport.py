@@ -1,4 +1,4 @@
-from RLUtil import POST_LINK_INDEX, ITEM_LINK_INDEX
+from RLUtil import DESC_POSTLINK_IND, DESC_ITEMLINK_IND
 from pandas import DataFrame
 
 
@@ -67,13 +67,13 @@ def create_page_row(list_in: list) -> str:
     for i, val in enumerate(list_in):
         # First column has link of item
         if i == 0:
-            content_table.append('  <td><a href="%s">%s</a></td>' % (list_in[3][ITEM_LINK_INDEX], val))
+            content_table.append('  <td><a href="%s">%s</a></td>' % (list_in[3][DESC_ITEMLINK_IND], val))
         elif i == 1:
             content_table.append('  <td>%s</td>' % val)
         # Every column has a link in second element
         elif i % 2 == 0:
             # The zeroth item in description holds poster link
-            content_table.append('  <td><a href="%s">%s</a></td>' % (list_in[i + 1][POST_LINK_INDEX], val))
+            content_table.append('  <td><a href="%s">%s</a></td>' % (list_in[i + 1][DESC_POSTLINK_IND], val))
 
     # End tag
     content_table.append('</tr>')

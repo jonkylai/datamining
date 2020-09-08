@@ -1,29 +1,39 @@
 from pandas import DataFrame
 from os import path
-import pandas as pd
-import matplotlib
+
+import time
 
 
-""" All constants are stored in this utility file """
+""" All constants are stored in utility """
 # Number of posts to store per repeated item
-MAX_ITEMS = 4
+MAX_ITEMS = 5
+# Age to remove old posts
+DAY_THRESHOLD = 3
 # Maximum value of item
 MAX_VALUE = 99999
 
 # Index in item list
-NAME_INDEX = 0
-DESCRIPTION_INDEX = 1
+ITEM_NAME_IND = 0
+ITEM_DESC_IND = 1
 # Index in description list
-POST_LINK_INDEX = 0
-ITEM_LINK_INDEX = 1
-USERNAME_INDEX = 2
-COMMENT_INDEX = 3
+DESC_POSTLINK_IND = 0
+DESC_ITEMLINK_IND = 1
+DESC_TIME_IND = 2
+DESC_USERNAME_IND = 3
+DESC_COMMENT_IND = 4
+MAX_DESC_COUNT = 5
+
+# Time format
+TIME_FORMAT = "%Y%m%d%H%M%S"
+
 # Name of blacklist file
 BLACKLIST_FILE = path.abspath(path.join(path.dirname(__file__), '..', 'DetectSteamBot', 'blacklist.txt'))
 # RL Trading url
 BASE_URL = 'https://rocket-league.com'
 # Watch list directory name
 WATCH_DIR = 'watchlist'
+# Name of save file
+PICKLE_FILE = 'RLTrading.p'
 
 
 class Query:
@@ -34,6 +44,16 @@ class Query:
         self.key = None
         self.max_search = 0
         self.params = {}
+
+
+def print_time(string_in: str, time_in: float, benchmark_in: float) -> float:
+    """ Benchmark run time of specified chunks of code
+        Usage requires time.time() before and print_time() after
+        Also removes this time from total program benchmark time """
+    elapsed_time = time.time() - time_in
+    print('--- %0.4f sec --- %s' % (elapsed_time, string_in))
+
+    return benchmark_in + elapsed_time
 
 
 def get_df_index(key_in: str, df_in: DataFrame) -> int:
