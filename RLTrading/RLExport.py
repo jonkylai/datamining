@@ -1,4 +1,3 @@
-from RLUtil import DESC_POSTLINK_IND, DESC_ITEMLINK_IND
 from pandas import DataFrame
 
 
@@ -7,8 +6,6 @@ def create_page(df_in: DataFrame, type_in: str) -> None:
         Web page is local and will be overwritten """
     if type_in == 'General':
         fid = open('RLTrading.html', 'w')
-    elif type_in == 'Single':
-        fid = open('RLTradingSingle.html', 'w')
     else:
         print('ERROR: Wrong input %s to create_page()' % type_in)
         exit()
@@ -58,22 +55,27 @@ a:visited {
 
 def create_page_row(list_in: list) -> str:
     """ Generates html for single row of table
-        Length of list_in will be 2 + MAX_ITEMS*2 """
+        Length of list_in will be 3 + MAX_ITEMS*2 """
     content_table = list()
 
     # Begin tag
     content_table.append('<tr>')
 
-    for i, val in enumerate(list_in):
+    for i in range(len(list_in)):
         # First column has link of item
         if i == 0:
-            content_table.append('  <td><a href="%s">%s</a></td>' % (list_in[3][DESC_ITEMLINK_IND], val))
+            content_table.append('  <td><a href="%s">%s</a></td>' % (list_in[1], list_in[0]))
         elif i == 1:
-            content_table.append('  <td>%s</td>' % val)
-        # Every column has a link in second element
-        elif i % 2 == 0:
-            # The zeroth item in description holds poster link
-            content_table.append('  <td><a href="%s">%s</a></td>' % (list_in[i + 1][DESC_POSTLINK_IND], val))
+            continue
+        elif i == 2 or i == 3:
+            content_table.append('  <td>%s</td>' % list_in[i])
+        # Afterwards every third column has a link
+        elif i % 3 == 1:
+            # Indicator is_new is two columns later
+            if list_in[i + 2] == True:
+                content_table.append('  <td><a href="%s" style="background-color:#FFFF00">%s</a></td>' % (list_in[i + 1], list_in[i]))
+            else:
+                content_table.append('  <td><a href="%s">%s</a></td>' % (list_in[i + 1], list_in[i]))
 
     # End tag
     content_table.append('</tr>')

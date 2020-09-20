@@ -1,8 +1,10 @@
 from RLDatabase import ItemDatabase
-from RLParser import get_link, get_time, get_username, get_comment, get_item, get_container
+from RLParser import get_link, get_time, get_username, get_comment, get_container
+from RLLanguage import get_item
 from RLUtil import Query, get_df_index, print_time, TIME_FORMAT, WATCH_DIR, MAX_ITEMS, PICKLE_FILE
 from RLExport import create_page
 from RLSpamFilter import spam_filter
+from RLMine import mine_steam
 from SavedQueries import all_queries, single_query
 
 import requests
@@ -14,7 +16,7 @@ import pickle
 from datetime import datetime
 from pandas import DataFrame
 from bs4 import BeautifulSoup
-from os import path
+from os import path, remove
 
 
 class RLTrades:
@@ -31,8 +33,20 @@ class RLTrades:
 
         # Initialize data
         benchmark_time = time.time()
-        if path.exists(PICKLE_FILE):
+        if user_action == 'Delete Pickle' and path.exists(PICKLE_FILE):
+            remove(PICKLE_FILE)
+            print('Removed pickled database')
+            exit()
+        if user_action == 'Data Mine':
+            if path.exists(PICKLE_FILE):
+                database = pickle.load(open(PICKLE_FILE, 'rb'))
+                mine_steam(database)
+            else:
+                print('ERROR: %s does not exist' % PICKLE_FILE)
+            exit()
+        elif path.exists(PICKLE_FILE):
             database = pickle.load(open(PICKLE_FILE, 'rb'))
+            database.change_is_new()
             benchmark_recorded = print_time('Loaded pickled database', benchmark_time, benchmark_recorded)
         else:
             database = ItemDatabase()
@@ -68,13 +82,9 @@ class RLTrades:
 
                 # Store all data in dict
                 for cost_item in cost_list:
-                    database.add_cost( cost_item['name'],
-                                       cost_item['value'],
-                                       cost_item['description'] )
+                    database.add_cost(cost_item)
                 for price_item in price_list:
-                    database.add_price( price_item['name'],
-                                        price_item['value'],
-                                        price_item['description'] )
+                    database.add_price(price_item)
 
         # Remove old data
         benchmark_time = time.time()
@@ -98,8 +108,8 @@ class RLTrades:
 
         # Execute user input action
         if user_action == 'Single':
-            create_page(self.df, 'Single')
-            # Use logic to determine item type from url
+            create_page(self.df, 'General')
+            # Print item using logic from get_highest_freq()
             user_key = database.get_highest_freq()
             self.print_single(user_key)
 
@@ -107,6 +117,7 @@ class RLTrades:
             create_page(self.df, 'General')
             # Print item from query
             self.print_single(user_key)
+            # Store data to external file
             self.item_watch(user_key)
 
         elif user_action == 'Optimize':
@@ -124,6 +135,8 @@ class RLTrades:
 
         # Print dataframe row
         print( self.df.loc[user_index] )
+        print( 'Possible Gain = %0.1f' % self.df.loc[user_index]['Possible Gain'] )
+        print( 'Possible Second = %0.1f' % self.df.loc[user_index]['Possible Second'] )
 
     def item_watch(self, user_key: str) -> None:
         # Get index of user_key
@@ -143,6 +156,8 @@ class RLTrades:
 
 
 def main():
+    """ Basic logic for user input
+        Made simple because I run this tens of times a day """
     # Create list of query options
     query_list = all_queries
     query_length = len(query_list)
@@ -168,12 +183,15 @@ def main():
         # Manual input
         user_query = single_query
         user_query.url = user_input
+        if 'filterPlatform=1' not in user_query.url:
+            print('ERROR: Manual input requires steam platform string filterPlatform=1')
+            exit()
 
     # Do everything else
     RLTrades(user_query)
 
-    print('Time spent on recorded activites: %0.4f' % benchmark_recorded)
-    print('Time spent on everything else:    %0.4f' % (time.time() - benchmark_all - benchmark_recorded))
+    print('Time spent on recorded activities: %0.4f' % benchmark_recorded)
+    print('Time spent on everything else:     %0.4f' % (time.time() - benchmark_all - benchmark_recorded))
 
     return 0
 

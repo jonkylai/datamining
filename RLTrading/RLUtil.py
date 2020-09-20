@@ -1,33 +1,23 @@
 from pandas import DataFrame
 from os import path
 
+import re
 import time
 
 
 """ All constants are stored in utility """
 # Number of posts to store per repeated item
-MAX_ITEMS = 5
+MAX_ITEMS = 6
 # Age to remove old posts
-DAY_THRESHOLD = 3
+DAY_THRESHOLD = 1
 # Maximum value of item
 MAX_VALUE = 99999
-
-# Index in item list
-ITEM_NAME_IND = 0
-ITEM_DESC_IND = 1
-# Index in description list
-DESC_POSTLINK_IND = 0
-DESC_ITEMLINK_IND = 1
-DESC_TIME_IND = 2
-DESC_USERNAME_IND = 3
-DESC_COMMENT_IND = 4
-MAX_DESC_COUNT = 5
 
 # Time format
 TIME_FORMAT = "%Y%m%d%H%M%S"
 
 # Name of blacklist file
-BLACKLIST_FILE = path.abspath(path.join(path.dirname(__file__), '..', 'DetectSteamBot', 'blacklist.txt'))
+BLACKLIST_FILE = path.abspath(path.join(path.dirname(__file__), '..', 'SBotDetection', 'blacklist.txt'))
 # RL Trading url
 BASE_URL = 'https://rocket-league.com'
 # Watch list directory name
@@ -39,11 +29,10 @@ PICKLE_FILE = 'RLTrading.p'
 class Query:
     """ Search parameters to get poster listings """
     def __init__(self):
-        self.name = None
-        self.action = None
         self.key = None
+        self.action = None
         self.max_search = 0
-        self.params = {}
+        self.url = None
 
 
 def print_time(string_in: str, time_in: float, benchmark_in: float) -> float:
@@ -76,4 +65,11 @@ def int_cast(user_in: str) -> int:
     finally:
         pass
 
+
+def string_clean(text_in: str) -> str:
+    """ Clean strings to remove weird characters and extra spaces """
+    text_out = re.sub('[^ A-Za-z0-9:/-]', '', text_in)
+    # Remove duplicate spaces
+    text_out = ' '.join(text_out.split())
+    return text_out
 

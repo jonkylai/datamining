@@ -1,4 +1,5 @@
 from RLUtil import int_cast, TIME_FORMAT, BASE_URL, MAX_VALUE
+from RLUtil import string_clean
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
 
@@ -84,62 +85,6 @@ def get_comment(soup_in: BeautifulSoup) -> str:
         return ''
 
 
-def get_item(want_container: list, has_container: list) -> (list, list):
-    """ Processes the poster's intentions to get the inherent value of an item """
-    cost_list = list()
-    price_list = list()
-
-    # Processing if user requests 1:1 trade
-    if len(has_container) == len(want_container):
-
-        for i in range( len(has_container) ):
-            # Create empty item
-            poster_item = dict( name        = '',
-                                description = '',
-                                value       = 0 )
-
-            # If poster is selling
-            if has_container[i]['name'] != 'Credits' and want_container[i]['name'] == 'Credits':
-                container = has_container
-                value = want_container[i]['count'] / has_container[i]['count']
-
-            # If poster buying
-            elif has_container[i]['name'] == 'Credits' and want_container[i]['name'] != 'Credits':
-                container = want_container
-                value = has_container[i]['count'] / want_container[i]['count']
-
-            # Do not append if criteria not met
-            else:
-                continue
-
-            # Assign values to item
-            poster_item['description'] = [ container[i]['post_link'], # DESC_POSTLINK_IND
-                                           container[i]['item_link'], # DESC_ITEMLINK_IND
-                                           container[i]['post_time'], # DESC_TIME_IND
-                                           container[i]['username'], # DESC_USERNAME_IND
-                                           container[i]['comment'] ] # DESC_COMMENT_IND
-
-            poster_item['value'] = round(value, 1)
-
-            poster_item['name'] = '%s %s %s' % ( container[i]['name'],
-                                                 container[i]['color'],
-                                                 container[i]['rarity'] )
-            # Remove extra white space
-            poster_item['name'] = ' '.join( poster_item['name'].split() )
-
-            # Append
-            if container is has_container:
-                cost_list.append(poster_item)
-            elif container is want_container:
-                price_list.append(poster_item)
-
-    else:
-        # Add NLP and others methods later
-        pass
-
-    return [cost_list, price_list]
-
-
 def get_container(type_in: str, soup_in: BeautifulSoup, link_in: str, time_in: str, username_in: str, comment_in: str) -> list:
     """ Grabs all necessary information from poster container """
     container_list = list()
@@ -174,7 +119,7 @@ def get_container(type_in: str, soup_in: BeautifulSoup, link_in: str, time_in: s
             container_list[-1]['post_link'] = link_in
             container_list[-1]['post_time'] = time_in
             container_list[-1]['username'] = username_in
-            container_list[-1]['comment'] = comment_in
+            container_list[-1]['comment'] = string_clean(comment_in).lower()
 
             # Assign item link with filter search of zero
             container_list[-1]['item_link'] = '%s%s%s' % ( BASE_URL,

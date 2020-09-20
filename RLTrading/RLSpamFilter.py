@@ -1,6 +1,6 @@
 from pandas import DataFrame
 from RLDatabase import ItemDatabase
-from RLUtil import MAX_VALUE, DESC_USERNAME_IND, BLACKLIST_FILE
+from RLUtil import MAX_VALUE, BLACKLIST_FILE
 
 
 def spam_filter(db_in: ItemDatabase, df_in: DataFrame) -> ItemDatabase:
@@ -32,14 +32,14 @@ def spam_filter(db_in: ItemDatabase, df_in: DataFrame) -> ItemDatabase:
     # Repeated gains of more than 100 are suspect
     while gain > 100:
         # Store cost post
-        username = df_in.iloc[i]['Cost Info 0'][DESC_USERNAME_IND]
+        username = df_in.iloc[i]['Cost Info 0'][0]
         if username not in gain_dict.keys():
             gain_dict[username] = 1
         else:
             gain_dict[username] += 1
 
         # Store price post
-        username = df_in.iloc[i]['Price Info 0'][DESC_USERNAME_IND]
+        username = df_in.iloc[i]['Price Info 0'][0]
         if username not in gain_dict.keys():
             gain_dict[username] = 1
         else:
@@ -51,7 +51,7 @@ def spam_filter(db_in: ItemDatabase, df_in: DataFrame) -> ItemDatabase:
     # Store database of bots by username
     for username in gain_dict:
         # Greater than 6 suspect items are flagged as a bot
-        if gain_dict[username] > 6:
+        if gain_dict[username] > 4:
             username_list.append(username)
 
     """ Remove all usernames that have been stored by method above
