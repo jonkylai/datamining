@@ -1,4 +1,4 @@
-# Datamining for Item Trade
+# Datamining for Item Trading and Fraud Detection
 
 This project systematically mines data from RL Trading by taking a user's offer list, desired list, and interpreting their post using NLP to store each item's worth into a database. If a user offers an item for another instead of RL Trading currency, the database can be used to label an item with its estimated numerical value. Optimized costs and prices are then extracted for every possible item.
 
@@ -7,6 +7,7 @@ Features from each user are extracted from their listing and profile account to 
 ## Import Dependencies
 
 keras, 
+nltk, 
 pandas, 
 numpy, 
 re, 
@@ -28,11 +29,13 @@ Running RLTrading/RLTrading.py will prompt the user for the settings defined in 
 
 2. Delete Pickle: This action deletes the existing database.
 
-3. Data Mine: This action will load the existing database and saves all unique user posts locally, which can be used as a training set to improve bot detection from SBotDetection.
+3. Data Mine: This action will load the existing database and saves all unique user posts locally, which can be used as a training set to improve phishing bot detection from SBotDetection.
 
 4. Watch: This action will save a specific item's listings and append it to a file, so prices over time can be monitored and visualized using RLPlot.py
 
-# Steam Bot Detection
+## Steam Bot Detection
 
-Once data is mined from RLTrading, SBotDetection extracts the features from each account. Metadata, profile statistics, poster comments, and user content language features are stored into a data set. Gathering statistical significance for labeled scammers is currently a work in progress. The flaws from rule-based bot detection are proving to be overcome by machine learning classification predictions.
+Once data is mined from RLTrading, SBotDetection extracts the features from each account. Metadata, profile statistics, poster comments, and user content text features are stored into the data set. There are currently investigations on the significance of TFIDF, stemming, lemmatization, n-grams, and sentiment features for training the model.
+
+Gathering a large data set for labeled scammers is currently a work in progress. The flaws from rule-based phishing bot detection are proving to be overcome by machine learning classification predictions.
 
