@@ -10,13 +10,12 @@ from SavedQueries import all_queries, single_query
 import requests
 import time
 import re
-import os
 import pickle
 
 from datetime import datetime
 from pandas import DataFrame
 from bs4 import BeautifulSoup
-from os import path, remove
+from os import path, remove, mkdir
 
 
 class RLTrades:
@@ -142,10 +141,15 @@ class RLTrades:
         # Get index of user_key
         user_index = get_df_index(user_key, self.df)
 
+        # Clean item name for filename format
         row_df = self.df.loc[user_index]
         file_name = row_df['Item Name'].split('-')[0].lower()
         file_name = ''.join( re.split(r'\s|\(|\)', file_name ) ) + '.dat'
 
+        if path.isdir(WATCH_DIR):
+            mkdir(WATCH_DIR)
+
+        # Append relevant information
         fid = open('%s/%s' % (WATCH_DIR, file_name), 'a')
         now_date = datetime.now().strftime(TIME_FORMAT)
         fid.write('%s,%f,%f,%f,%f\n' % ( now_date,
