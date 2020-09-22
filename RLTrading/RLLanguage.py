@@ -1,5 +1,5 @@
-from RLDatabase import SingleItem
-from RLUtil import string_clean
+from RLDatabase import ItemDatabase, SingleItem
+from RLUtil import string_clean, MAX_VALUE
 
 
 def lexical_diversity(text_in: str) -> float:
@@ -14,6 +14,7 @@ def container2item(container_in: dict) -> SingleItem:
     item_out.post_time = container_in['post_time']
     item_out.username = container_in['username']
     item_out.comment = container_in['comment']
+    item_out.is_multitrade = container_in['is_multitrade']
     item_out.item_name = '%s %s %s' % ( container_in['name'],
                                         container_in['color'],
                                         container_in['rarity'] )
@@ -22,7 +23,7 @@ def container2item(container_in: dict) -> SingleItem:
     return item_out
 
 
-def get_item(want_container: list, has_container: list) -> (list, list):
+def get_item(database_in: ItemDatabase, want_container: list, has_container: list) -> (list, list):
     """ Processes the poster's intentions to get the inherent value of an item """
     cost_list = list()
     price_list = list()
@@ -41,16 +42,20 @@ def get_item(want_container: list, has_container: list) -> (list, list):
                 container = want_container
                 value = has_container[i]['count'] / want_container[i]['count']
 
-            # Do not append if criteria not met
+            # If pickle exists, use existing database to get potential value through multiple trades
             else:
-                continue
+                container = has_container
+                container[i]['is_multitrade'] = True
+                value = database_in.get_cost(want_container[i]['name'])
+                if value == -1 or value == MAX_VALUE:
+                    continue
 
             # Assign values to item
             poster_item = container2item(container[i])
             poster_item.item_value = round(value, 1)
 
             # Exclude certain types of items before appending
-            if 'Offer' not in poster_item.item_name:
+            if 'Offer' not in poster_item.item_name and poster_item.item_value != 1:
                 if container is has_container:
                     cost_list.append(poster_item)
                 elif container is want_container:
@@ -70,7 +75,7 @@ def get_item(want_container: list, has_container: list) -> (list, list):
             poster_item.item_value = round(value, 1)
 
             # Exclude certain types of items before appending
-            if 'Offer' not in poster_item.item_name:
+            if 'Offer' not in poster_item.item_name and poster_item.item_value != 1:
                 price_list.append(poster_item)
 
     # Requests for single 1:N trade or one each trade
@@ -87,7 +92,7 @@ def get_item(want_container: list, has_container: list) -> (list, list):
             poster_item.item_value = round(value, 1)
 
             # Exclude certain types of items before appending
-            if 'Offer' not in poster_item.item_name:
+            if 'Offer' not in poster_item.item_name and poster_item.item_value != 1:
                 cost_list.append(poster_item)
 
     else:

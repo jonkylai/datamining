@@ -1,6 +1,7 @@
 from RLUtil import MAX_VALUE, MAX_ITEMS, DAY_THRESHOLD, TIME_FORMAT
-from pandas import DataFrame
+from RLExport import get_color
 
+from pandas import DataFrame
 from datetime import datetime, timedelta
 
 import time
@@ -18,6 +19,7 @@ class SingleItem:
         self.username = 'NULL'
         self.comment = 'NULL'
         self.is_new = True
+        self.is_multitrade = False
 
 
 class ItemDatabase:
@@ -64,6 +66,19 @@ class ItemDatabase:
                 return True
         return False
 
+    def get_cost(self, name_in: str) -> float:
+        """ Gets a feasible cost of a specified item
+            This means getting the highest cost from MAX_ITEMS """
+        if name_in in self.cost_dict:
+            if len(self.cost_dict) >= MAX_ITEMS:
+                sorted_cost = sorted(self.cost_dict[name_in], key=lambda x: x.item_value, reverse=True)
+                print(sorted_cost)
+                print('NEED TO TEST')
+                exit()
+                return sorted_cost[MAX_ITEMS - 1].item_value
+
+        return -1
+
     def remove_username(self, username_in: str) -> None:
         """ Removes any cost or price that contains username_in """
         removed_link = False
@@ -106,12 +121,12 @@ class ItemDatabase:
                 for i in range(len(user_dict[key])):
 
                     # Get post time and convert it
-                    time_post = user_dict[key][i].post_time
-                    if time_post != 'NULL':
-                        time_post = datetime.strptime(time_post, TIME_FORMAT)
+                    post_time = user_dict[key][i].post_time
+                    if post_time != 'NULL':
+                        post_time = datetime.strptime(post_time, TIME_FORMAT)
 
                         # Nullify key if post is too old
-                        if time_post + timedelta(days=DAY_THRESHOLD) < datetime.now():
+                        if post_time + timedelta(days=DAY_THRESHOLD) < datetime.now():
                             remove_count += 1
                             if user_dict is self.cost_dict:
                                 user_dict[key][i] = self.null_cost
@@ -174,11 +189,11 @@ class ItemDatabase:
             for i in range(MAX_ITEMS):
                 row_list.append( sorted_cost[i].item_value )
                 row_list.append( sorted_cost[i].post_link )
-                row_list.append( sorted_cost[i].is_new )
+                row_list.append( get_color(sorted_cost[i]) )
             for i in range(MAX_ITEMS):
                 row_list.append( sorted_price[i].item_value )
                 row_list.append( sorted_price[i].post_link )
-                row_list.append( sorted_price[i].is_new )
+                row_list.append( get_color(sorted_price[i]) )
 
             # Append to DataFrame
             table_out.append(row_list)
@@ -186,17 +201,6 @@ class ItemDatabase:
         # Create dataframe and sort column by best prices
         df_out = DataFrame(data=table_out, columns=header_names)
         return df_out.sort_values('Possible Gain', ascending=False)
-
-    def change_is_new(self) -> None:
-        """ Change all SingleItem.is_new to False """
-        user_dict_list = [self.cost_dict, self.price_dict]
-        # Loop over cost and price
-        for user_dict in user_dict_list:
-
-            # Loop over dictionaries for cost and price
-            for key in user_dict:
-                for item in user_dict[key]:
-                    item.is_new = False
 
     def get_highest_freq(self) -> str:
         """ Get the key for single type queries
@@ -221,3 +225,14 @@ class ItemDatabase:
             if item.is_new == True:
                 count_out += 1
         return count_out
+
+    def change_is_new(self) -> None:
+        """ Change all SingleItem.is_new to False """
+        user_dict_list = [self.cost_dict, self.price_dict]
+        # Loop over cost and price
+        for user_dict in user_dict_list:
+
+            # Loop over dictionaries for cost and price
+            for key in user_dict:
+                for item in user_dict[key]:
+                    item.is_new = False

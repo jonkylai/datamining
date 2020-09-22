@@ -7,7 +7,7 @@ import time
 
 """ All constants are stored in utility """
 # Number of posts to store per repeated item
-MAX_ITEMS = 6
+MAX_ITEMS = 5
 # Age to remove old posts
 DAY_THRESHOLD = 1
 # Maximum value of item
@@ -15,6 +15,8 @@ MAX_VALUE = 99999
 
 # Time format
 TIME_FORMAT = "%Y%m%d%H%M%S"
+# Time between monitor loads in seconds
+SLEEP_TIME = 60
 
 # Name of blacklist file
 BLACKLIST_FILE = path.abspath(path.join(path.dirname(__file__), '..', 'SBotDetection', 'blacklist.txt'))
@@ -31,7 +33,7 @@ class Query:
     def __init__(self):
         self.key = None
         self.action = None
-        self.max_search = 0
+        self.monitor_mode = False
         self.url = None
 
 

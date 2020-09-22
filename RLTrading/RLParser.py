@@ -41,22 +41,29 @@ def get_time(soup_in: BeautifulSoup) -> str:
         line_list = text[0].prettify().split('\n')
         for i, line in enumerate(line_list):
             if search_text in line:
-                # Where the time ago string is the 3rd item after searched text
-                time_text = line_list[i+2]
 
-                # Convert time ago string to delta time
-                time_num = int(time_text.split()[0])
-                if 'second' in time_text:
-                    delta_time = timedelta(seconds=time_num)
-                elif 'minute' in time_text:
-                    delta_time = timedelta(minutes=time_num)
-                elif 'hour' in time_text:
-                    delta_time = timedelta(hours=time_num)
-                elif 'day' in time_text:
-                    delta_time = timedelta(days=time_num)
+                # Where the time ago string is the 3rd item after searched text
+                time_text = line_list[i + 2]
+
+                # Posts that have just been made
+                if 'just now' in time_text:
+                    delta_time = timedelta(seconds=0)
+
+                # Posts that are older than current time
                 else:
-                    print('ERROR: Cannot recognize time from %s' % time_text)
-                    exit()
+                    # Convert time ago string to delta time
+                    time_num = int(time_text.split()[0])
+                    if 'second' in time_text:
+                        delta_time = timedelta(seconds=time_num)
+                    elif 'minute' in time_text:
+                        delta_time = timedelta(minutes=time_num)
+                    elif 'hour' in time_text:
+                        delta_time = timedelta(hours=time_num)
+                    elif 'day' in time_text:
+                        delta_time = timedelta(days=time_num)
+                    else:
+                        print('ERROR: Cannot recognize time from %s' % time_text)
+                        exit()
 
                 # Calculate when the post was made
                 time_post = datetime.now() - delta_time
@@ -98,7 +105,8 @@ def get_container(type_in: str, soup_in: BeautifulSoup, link_in: str, time_in: s
                             post_time  = '',
                             username = '',
                             item_link = '',
-                            comment = '' )
+                            comment = '',
+                            is_multitrade = False)
 
     # Parse depending on type input
     if type_in == 'want':

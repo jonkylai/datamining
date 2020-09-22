@@ -1,4 +1,45 @@
+from RLUtil import TIME_FORMAT
+
 from pandas import DataFrame
+from datetime import datetime, timedelta
+
+
+def get_color(item_in) -> str:
+    """ Determines the background color of item based on various criteria
+        If item is null, black
+        If item is new, yellow
+        If item is old, grey
+        Shades of yellow and grey are determined by age of post """
+    if item_in.post_time == 'NULL':
+        return '000000'
+
+    # Colors for new items
+    elif item_in.is_new == True:
+        post_time = datetime.strptime(item_in.post_time, TIME_FORMAT)
+        time_ago = datetime.now() - post_time
+        if time_ago < timedelta(minutes=10):
+            return 'FFFF00'
+        elif time_ago < timedelta(minutes=30):
+            return 'CCCC00'
+        elif time_ago < timedelta(hours=1):
+            return '999900'
+        elif time_ago < timedelta(hours=2):
+            return '666600'
+        else:
+            return '333300'
+
+    # Colors for old items
+    else:
+        post_time = datetime.strptime(item_in.post_time, TIME_FORMAT)
+        time_ago = datetime.now() - post_time
+        if time_ago < timedelta(minutes=30):
+            return '606060'
+        elif time_ago < timedelta(hours=1):
+            return '404040'
+        elif time_ago < timedelta(hours=2):
+            return '202020'
+        else:
+            return '000000'
 
 
 def create_page(df_in: DataFrame, type_in: str) -> None:
@@ -71,11 +112,9 @@ def create_page_row(list_in: list) -> str:
             content_table.append('  <td>%s</td>' % list_in[i])
         # Afterwards every third column has a link
         elif i % 3 == 1:
-            # Indicator is_new is two columns later
-            if list_in[i + 2] == True:
-                content_table.append('  <td><a href="%s" style="background-color:#FFFF00">%s</a></td>' % (list_in[i + 1], list_in[i]))
-            else:
-                content_table.append('  <td><a href="%s">%s</a></td>' % (list_in[i + 1], list_in[i]))
+            # Background color is two columns later
+            content_table.append( '  <td><a href="%s" style="background-color:#%s">%s</a></td>' %
+                                  (list_in[i + 1], list_in[i + 2], list_in[i]) )
 
     # End tag
     content_table.append('</tr>')

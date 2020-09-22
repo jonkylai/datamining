@@ -1,7 +1,7 @@
 from RLDatabase import ItemDatabase
 from RLParser import get_link, get_time, get_username, get_comment, get_container
 from RLLanguage import get_item
-from RLUtil import Query, get_df_index, print_time, TIME_FORMAT, WATCH_DIR, MAX_ITEMS, PICKLE_FILE
+from RLUtil import Query, get_df_index, print_time, SLEEP_TIME, TIME_FORMAT, WATCH_DIR, MAX_ITEMS, PICKLE_FILE
 from RLExport import create_page
 from RLSpamFilter import spam_filter
 from RLMine import mine_steam
@@ -28,7 +28,7 @@ class RLTrades:
         user_action = user_query.action
         user_url = user_query.url
         user_key = user_query.key
-        user_max = user_query.max_search
+        user_monitor = user_query.monitor_mode
 
         # Initialize data
         benchmark_time = time.time()
@@ -51,12 +51,11 @@ class RLTrades:
             database = ItemDatabase()
             benchmark_recorded = print_time('Created new database', benchmark_time, benchmark_recorded)
 
-        # Begin data mining from user_max to page 1
-        for i in range(user_max, 0, -1):
-
+        # Data mine in monitor mode by doing an infinite loop until ctrl+c
+        while True:
             # Get site data
             benchmark_time = time.time()
-            page = requests.get('%s&p=%i' % (user_url, i))
+            page = requests.get(user_url)
             benchmark_recorded = print_time(page.url, benchmark_time, benchmark_recorded)
 
             page_soup = BeautifulSoup(page.content, 'html.parser')
@@ -77,7 +76,7 @@ class RLTrades:
                 has_container  = get_container('has', user_soup, post_link, post_time, post_username, post_comment)
 
                 # Use NLP to get poster's desired trades
-                [cost_list, price_list] = get_item(want_container, has_container)
+                [cost_list, price_list] = get_item(database, want_container, has_container)
 
                 # Store all data in dict
                 for cost_item in cost_list:
@@ -85,42 +84,55 @@ class RLTrades:
                 for price_item in price_list:
                     database.add_price(price_item)
 
-        # Remove old data
-        benchmark_time = time.time()
-        database.remove_old()
-        benchmark_recorded = print_time('remove_old()', benchmark_time, benchmark_recorded)
+            # Remove old data
+            benchmark_time = time.time()
+            database.remove_old()
+            benchmark_recorded = print_time('remove_old()', benchmark_time, benchmark_recorded)
 
-        # Save data
-        pickle.dump(database, open(PICKLE_FILE, 'wb'))
+            # Save data
+            pickle.dump(database, open(PICKLE_FILE, 'wb'))
 
-        # Create dataframe and organize
-        benchmark_time = time.time()
-        self.df = database.create_df()
+            # Create dataframe and organize
+            benchmark_time = time.time()
+            self.df = database.create_df()
 
-        # Remove all possible spam and recreate dataframe
-        database = spam_filter(database, self.df)
-        self.df = database.create_df()
-        benchmark_recorded = print_time('spam_filter()', benchmark_time, benchmark_recorded)
+            # Remove all possible spam and recreate dataframe
+            database = spam_filter(database, self.df)
+            self.df = database.create_df()
+            benchmark_recorded = print_time('spam_filter()', benchmark_time, benchmark_recorded)
 
-        # Export to both page and csv
-        self.df.to_csv('data.csv', index=False)
+            # Export to both page and csv
+            self.df.to_csv('data.csv', index=False)
 
-        # Execute user input action
-        if user_action == 'Single':
-            create_page(self.df, 'General')
-            # Print item using logic from get_highest_freq()
-            user_key = database.get_highest_freq()
-            self.print_single(user_key)
+            # Execute user input action
+            if user_action == 'Single':
+                create_page(self.df, 'General')
+                # Print item using logic from get_highest_freq()
+                user_key = database.get_highest_freq()
+                self.print_single(user_key)
 
-        elif user_action == 'Watch':
-            create_page(self.df, 'General')
-            # Print item from query
-            self.print_single(user_key)
-            # Store data to external file
-            self.item_watch(user_key)
+            elif user_action == 'Watch':
+                create_page(self.df, 'General')
+                # Print item from query
+                self.print_single(user_key)
+                # Store data to external file
+                self.item_watch(user_key)
 
-        elif user_action == 'Optimize':
-            create_page(self.df, 'General')
+            elif user_action == 'Optimize':
+                create_page(self.df, 'General')
+
+            # Exit if not in monitor mode
+            if not user_monitor:
+                break
+
+            # Sleep if in monitor mode
+            try:
+                print('Sleeping %i seconds' % SLEEP_TIME)
+                benchmark_recorded -= SLEEP_TIME
+                time.sleep(SLEEP_TIME)
+            except KeyboardInterrupt:
+                break
+
 
     def print_single(self, user_key: str) -> None:
         """ Print out information from a single query
@@ -146,7 +158,7 @@ class RLTrades:
         file_name = row_df['Item Name'].split('-')[0].lower()
         file_name = ''.join( re.split(r'\s|\(|\)', file_name ) ) + '.dat'
 
-        if path.isdir(WATCH_DIR):
+        if not path.isdir(WATCH_DIR):
             mkdir(WATCH_DIR)
 
         # Append relevant information
