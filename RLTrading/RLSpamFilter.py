@@ -32,14 +32,14 @@ def spam_filter(db_in: ItemDatabase, df_in: DataFrame) -> ItemDatabase:
     # Repeated gains of more than 100 are suspect
     while gain > 100:
         # Store cost post
-        username = df_in.iloc[i]['Cost Info 0'][0]
+        username = df_in.iloc[i]['Cost Steam 0']
         if username not in gain_dict.keys():
             gain_dict[username] = 1
         else:
             gain_dict[username] += 1
 
         # Store price post
-        username = df_in.iloc[i]['Price Info 0'][0]
+        username = df_in.iloc[i]['Price Steam 0']
         if username not in gain_dict.keys():
             gain_dict[username] = 1
         else:
@@ -50,8 +50,8 @@ def spam_filter(db_in: ItemDatabase, df_in: DataFrame) -> ItemDatabase:
 
     # Store database of bots by username
     for username in gain_dict:
-        # Greater than 6 suspect items are flagged as a bot
-        if gain_dict[username] > 4:
+        # Greater than 5 suspect items are flagged as a bot
+        if gain_dict[username] > 5:
             username_list.append(username)
 
     """ Remove all usernames that have been stored by method above

@@ -20,13 +20,11 @@ def get_text_between(string_in: str, begin_in: str, end_in: str) -> str:
 
 def get_link(soup_in: BeautifulSoup) -> str:
     """ Grabs the post link so items are traceable """
-    text = soup_in.find_all('header', {'class': 'rlg-trade__header'})
     search_text = '/trade/'
 
-    if len(text) > 0:
-        for line in text[0].prettify().split():
-            if search_text in line:
-                return 'https://rocket-league.com%s' % line.split('\"')[1]
+    for line in soup_in.prettify().split():
+        if search_text in line:
+            return 'https://rocket-league.com%s' % line.split('\"')[1]
 
     print('ERROR: Cannot find "%s" in soup_text' % search_text)
     exit()
@@ -74,13 +72,32 @@ def get_time(soup_in: BeautifulSoup) -> str:
 
 
 def get_username(soup_in: BeautifulSoup) -> str:
-    """ Grabs username for spam filtering """
-    text = soup_in.find_all('a', {'class': 'rlg-trade__platform'})
+    """ Grabs username for spam filtering
+        Now handles both Steam and Epic profiles """
+    text = soup_in.find_all('div', {'class': 'rlg-trade__platforms'})
+
+    # An error will be thrown if this does not get overwritten
+    username_out = None
+
     if len(text) > 0:
-        return get_text_between(text[0].prettify(), 'phishingAware(\'', '\');')
-    else:
+        line_list = text[0].prettify().split('\n')
+        for i, line in enumerate(line_list):
+
+            # Default option is to get Steam profile
+            if 'steamcommunity' in line:
+                return get_text_between(line, 'phishingAware(\'', '\');')
+
+            # Otherwise use username
+            elif '<span' in line:
+                # Username is 1 lines later
+                username_out = line_list[i+1].strip()
+
+    if username_out is None:
+        print(line_list)
         print('ERROR: Could not find username')
         exit()
+    else:
+        return username_out
 
 
 def get_comment(soup_in: BeautifulSoup) -> str:

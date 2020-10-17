@@ -96,12 +96,20 @@ a:visited {
 
 def create_page_row(list_in: list) -> str:
     """ Generates html for single row of table
-        Length of list_in will be 3 + MAX_ITEMS*2 """
+        Length of list_in will be 4 + MAX_ITEMS*4 """
     content_table = list()
+
+    # Do not write if the gains are unreasonable
+    try:
+        if int(list_in[2]) < -1000:
+            return ''
+    except:
+        pass
 
     # Begin tag
     content_table.append('<tr>')
 
+    past_threshold = False
     for i in range(len(list_in)):
         # First column has link of item
         if i == 0:
@@ -111,10 +119,13 @@ def create_page_row(list_in: list) -> str:
         elif i == 2 or i == 3:
             content_table.append('  <td>%s</td>' % list_in[i])
         # Afterwards every third column has a link
-        elif i % 3 == 1:
-            # Background color is two columns later
+        elif i % 4 == 0:
+            # Background color is three columns later
             content_table.append( '  <td><a href="%s" style="background-color:#%s">%s</a></td>' %
-                                  (list_in[i + 1], list_in[i + 2], list_in[i]) )
+                                  (list_in[i + 1], list_in[i + 3], list_in[i]) )
+
+        if past_threshold:
+            break
 
     # End tag
     content_table.append('</tr>')

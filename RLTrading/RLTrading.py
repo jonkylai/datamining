@@ -35,8 +35,8 @@ class RLTrades:
         if user_action == 'Delete Pickle' and path.exists(PICKLE_FILE):
             remove(PICKLE_FILE)
             print('Removed pickled database')
-            exit()
-        if user_action == 'Data Mine':
+            database = ItemDatabase()
+        elif user_action == 'Data Mine':
             if path.exists(PICKLE_FILE):
                 database = pickle.load(open(PICKLE_FILE, 'rb'))
                 mine_steam(database)
@@ -118,7 +118,7 @@ class RLTrades:
                 # Store data to external file
                 self.item_watch(user_key)
 
-            elif user_action == 'Optimize':
+            elif user_action == 'Optimize' or user_action == 'Delete Pickle':
                 create_page(self.df, 'General')
 
             # Exit if not in monitor mode

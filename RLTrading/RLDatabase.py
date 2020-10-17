@@ -147,11 +147,13 @@ class ItemDatabase:
         header_names.append('Possible Second')
         for i in range(MAX_ITEMS):
             header_names.append('Cost %i' % i)
-            header_names.append('Cost Info %i' % i)
+            header_names.append('Cost Link %i' % i)
+            header_names.append('Cost Steam %i' % i)
             header_names.append('Cost New %i' % i)
         for i in range(MAX_ITEMS):
             header_names.append('Price %i' % i)
-            header_names.append('Price Info %i' % i)
+            header_names.append('Price Link %i' % i)
+            header_names.append('Price Steam %i' % i)
             header_names.append('Price New %i' % i)
 
         # Create list to be converted into dataframe
@@ -189,10 +191,12 @@ class ItemDatabase:
             for i in range(MAX_ITEMS):
                 row_list.append( sorted_cost[i].item_value )
                 row_list.append( sorted_cost[i].post_link )
+                row_list.append( sorted_cost[i].username )
                 row_list.append( get_color(sorted_cost[i]) )
             for i in range(MAX_ITEMS):
                 row_list.append( sorted_price[i].item_value )
                 row_list.append( sorted_price[i].post_link )
+                row_list.append( sorted_price[i].username )
                 row_list.append( get_color(sorted_price[i]) )
 
             # Append to DataFrame

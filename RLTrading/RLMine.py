@@ -2,14 +2,14 @@ from RLDatabase import ItemDatabase
 from RLParser import get_text_between
 from RLUtil import print_time
 
-from os import path
+from os import path, mkdir
 
 import requests
 import time
 
 
 SAVE_DIR = 'savedata'
-REPLACE_LIST = [':', '*', '/', '|', '?']
+REPLACE_LIST = [':', '*', '/', '\\', '|', '?']
 
 
 def get_title(page_in: str) -> str:
@@ -32,7 +32,7 @@ def mine_steam(database_in: ItemDatabase) -> None:
     for user_dict in user_dict_list:
         for key in user_dict:
             for item in user_dict[key]:
-                if item.username != 'NULL':
+                if 'steamcommunity' in item.username:
                     username_list.append(item.username)
 
     # Loop over unique items
@@ -41,8 +41,12 @@ def mine_steam(database_in: ItemDatabase) -> None:
         benchmark_time = time.time()
         page = requests.get(username)
         title = get_title(page.text)
-        save_path = '%s/%s.html' % (SAVE_DIR, title)
+        save_path = path.join(SAVE_DIR, '%s.html' % title)
         requests_time = print_time(username, benchmark_time, requests_time)
+
+        # Create directory if doesn't exist
+        if not path.isdir(SAVE_DIR):
+            mkdir(SAVE_DIR)
 
         # Save if file does not exist
         if not path.exists(save_path):
