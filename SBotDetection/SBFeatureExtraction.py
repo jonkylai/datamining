@@ -1,5 +1,7 @@
-from SBUtil import in_dict
-from SBParse import is_private, get_summary, get_number, get_comment_count, get_sidebar, get_avatar, get_hour, get_comment, get_rep
+from SBParser import is_private, get_summary, get_number, get_comment_count, get_sidebar, get_avatar, get_hour, get_comment, get_rep
+from SBUtil import in_list
+
+import numpy as np
 import pickle
 import os
 import time
@@ -10,8 +12,10 @@ from math import log
 
 HUMAN_DIR = 'savedhumans'
 BOT_DIR = 'savedbots'
+TEST_DIR = 'savedtest'
 HUMAN_PICKLE = 'steam_human.p'
 BOT_PICKLE = 'steam_bot.p'
+TEST_PICKLE = 'steam_test.p'
 
 
 def calc_num(string_in: str) -> dict:
@@ -54,28 +58,43 @@ def calc_idf(list_in: list) -> dict:
     return dict_out
 
 
+def dict2list(dict_in: dict) -> list:
+    """ Convert dictionary to list
+        First item will be bot classification. Other keys will be sorted """
+    list_out = list()
+    list_out.append(dict_in['bot'])
+
+    key_list = sorted(dict_in.keys(), key=lambda x: x.lower())
+    key_list.remove('bot')
+    for key in key_list:
+        list_out.append(dict_in[key])
+    return list_out
+
+
 def main():
     """ Do same tasks for both human and bot list """
     steam_list = [ [HUMAN_PICKLE, HUMAN_DIR],
-                   [BOT_PICKLE,   BOT_DIR] ]
-    #steam_list = [ ['steam_tmp.p', 'savedata'] ]
+                   [BOT_PICKLE,   BOT_DIR],
+                   [TEST_PICKLE,  TEST_DIR] ]
 
     benchmark_time = time.time()
+    total_entries = 0
 
     for fetch_list in steam_list:
         fetch_pickle = fetch_list[0]
         fetch_dir = fetch_list[1]
 
         """ Load previously loaded data if it exists """
-        #if os.path.exists(fetch_pickle):
-        #    steam_data = pickle.load(open(fetch_pickle, 'rb'))
-        #else:
-        #    steam_data = list()
+        if os.path.exists(fetch_pickle):
+            steam_data = pickle.load(open(fetch_pickle, 'rb'))
+        else:
+            steam_data = list()
+        # Force reload (should be removed for larger data sets)
         steam_data = list()
 
         """ Read list of Steam accounts and stores their features """
         for local_file in os.listdir(fetch_dir):
-            if in_dict(local_file, steam_data):
+            if in_list(local_file, steam_data):
                 continue
 
             fetch_dict = dict()
@@ -91,12 +110,22 @@ def main():
 
             # Skip accounts that are kept private
             if not is_private(page_soup):
+                print('Reading \"%s\"' % local_file)
+
                 fetch_dict['source'] = local_file
 
-                fetch_dict['avatar'] = get_avatar(page_soup)
+                # Classification: either supervised or labeled as -1
+                if fetch_dir == BOT_DIR:
+                    fetch_dict['bot'] = 1
+                elif fetch_dir == HUMAN_DIR:
+                    fetch_dict['bot'] = 0
+                else:
+                    fetch_dict['bot'] = -1
+
+                avatar = get_avatar(page_soup)
                 fetch_dict['level'] = get_number(page_soup, 'persona_level')
 
-                fetch_dict['summary'] = get_summary(page_soup, 'profile_summary')
+                summary = get_summary(page_soup, 'profile_summary')
 
                 fetch_dict['games'] = get_sidebar(page_soup, 'Games')
                 fetch_dict['inventory'] = get_sidebar(page_soup, 'Inventory')
@@ -110,14 +139,21 @@ def main():
                 fetch_dict['groups'] = get_number(page_soup, 'profile_group_links')
                 fetch_dict['friends'] = get_number(page_soup, 'profile_friend_links')
 
-                fetch_dict['hour_list'] = get_hour(page_soup)
+                hour_list = get_hour(page_soup)
+                fetch_dict['total_hour'] = sum(hour_list)
 
-                fetch_dict['stamp_list'] = get_comment(page_soup, 'commentthread_comment_timestamp')
-                fetch_dict['comment_list'] = get_comment(page_soup, 'commentthread_comment_text')
+                stamp_list = get_comment(page_soup, 'commentthread_comment_timestamp')
                 fetch_dict['comment_count'] = get_comment_count(page_soup, 'commentthread_area')
 
-                fetch_dict['bad_rep'] = get_rep('bad', fetch_dict['comment_list'])
-                fetch_dict['good_rep'] = get_rep('good', fetch_dict['comment_list'])
+                comment_list = get_comment(page_soup, 'commentthread_comment_text')
+                bad_rep = get_rep('bad', comment_list)
+                good_rep = get_rep('good', comment_list)
+
+                if fetch_dir == TEST_DIR:
+                    if bad_rep == 0 and good_rep > 1:
+                        fetch_dict['bot'] = 0
+                    else:
+                        fetch_dict['bot'] = 1
 
                 #word_num = calc_num(fetch_dict['summary'])
                 #term_freq = calc_tf(word_num)
@@ -126,14 +162,17 @@ def main():
                 #print(idf)
                 #exit()
 
-                steam_data.append(fetch_dict)
-                print('Done reading \"%s\"' % local_file)
+                steam_data.append(dict2list(fetch_dict))
 
         print('--- %0.4f sec --- Total time' % (time.time() - benchmark_time))
 
         pickle.dump(steam_data, open(fetch_pickle, 'wb'))
 
-        print( '%s has %i entries' % (fetch_pickle, len(steam_data)) )
+        steam_length = len(steam_data)
+        print( '%s has %i entries' % (fetch_pickle, steam_length) )
+        total_entries += steam_length
+
+    print('Total number of entries = %i' % total_entries)
 
 
 if __name__ == "__main__":
