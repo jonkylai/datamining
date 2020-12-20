@@ -9,6 +9,11 @@ from keras import layers, activations, Input, callbacks
 from matplotlib import pyplot as plt
 
 
+""" Notes:
+    GDA discriminant analysis
+    Naive Bayes for language processing (spam) - should try NBSVM """
+
+
 def clean_data(list_in: list) -> np.array:
     """ Takes in a list of pickled data and combines them
         Cleans out any string data (must be consistently in same columns)
@@ -20,6 +25,7 @@ def clean_data(list_in: list) -> np.array:
         for single_list in pickle_list:
             append_list = list()
             for item in single_list:
+                # Only add items that can be casted to float
                 try:
                     append_list.append(float(item))
                 except:

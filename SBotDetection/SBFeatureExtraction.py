@@ -1,5 +1,5 @@
 from SBParser import is_private, get_summary, get_number, get_comment_count, get_sidebar, get_avatar, get_hour, get_comment, get_rep
-from SBUtil import in_list
+from SBUtil import in_list, string_clean
 
 import numpy as np
 import pickle
@@ -10,6 +10,8 @@ from bs4 import BeautifulSoup
 from math import log
 
 
+""" Note that bot labels are synonymous to phishing labels
+    Most scammers use a hybrid of bot and human phishing scam """
 HUMAN_DIR = 'savedhumans'
 BOT_DIR = 'savedbots'
 TEST_DIR = 'savedtest'
@@ -43,11 +45,12 @@ def calc_tf(dict_in: dict) -> dict:
 
 
 def calc_idf(list_in: list) -> dict:
-    """ Compute inverse data frequency
+    """ Compute inverse document frequency
         idf = log( N / df )"""
     N = len(list_in)
 
-    dict_out = dict.fromkeys(list_in[0].keys(), 0)
+    all_keys = set().union(*list_in)
+    dict_out = dict.fromkeys(all_keys, 0)
     for document in list_in:
         for word, val in document.items():
             if val > 0:
@@ -89,15 +92,17 @@ def main():
             steam_data = pickle.load(open(fetch_pickle, 'rb'))
         else:
             steam_data = list()
+
         # Force reload (should be removed for larger data sets)
         steam_data = list()
 
         """ Read list of Steam accounts and stores their features """
+        steam_dicts = list()
         for local_file in os.listdir(fetch_dir):
-            if in_list(local_file, steam_data):
-                continue
 
-            fetch_dict = dict()
+            # Skip if file already processed
+            if in_list(local_file, steam_data) or 'Community __ Error.html' in local_file:
+                continue
 
             # Read data
             source = '%s/%s' % (fetch_dir, local_file)
@@ -106,6 +111,7 @@ def main():
             content = '\n'.join(content)
             f.close()
 
+            fetch_dict = dict()
             page_soup = BeautifulSoup(content, 'html.parser')
 
             # Skip accounts that are kept private
@@ -122,10 +128,12 @@ def main():
                 else:
                     fetch_dict['bot'] = -1
 
+                # Unused features
                 avatar = get_avatar(page_soup)
-                fetch_dict['level'] = get_number(page_soup, 'persona_level')
+                stamp_list = get_comment(page_soup, 'commentthread_comment_timestamp')
 
-                summary = get_summary(page_soup, 'profile_summary')
+                # General count features
+                fetch_dict['level'] = get_number(page_soup, 'persona_level')
 
                 fetch_dict['games'] = get_sidebar(page_soup, 'Games')
                 fetch_dict['inventory'] = get_sidebar(page_soup, 'Inventory')
@@ -138,31 +146,66 @@ def main():
 
                 fetch_dict['groups'] = get_number(page_soup, 'profile_group_links')
                 fetch_dict['friends'] = get_number(page_soup, 'profile_friend_links')
+                fetch_dict['comment_count'] = get_comment_count(page_soup, 'commentthread_area')
 
                 hour_list = get_hour(page_soup)
                 fetch_dict['total_hour'] = sum(hour_list)
-
-                stamp_list = get_comment(page_soup, 'commentthread_comment_timestamp')
-                fetch_dict['comment_count'] = get_comment_count(page_soup, 'commentthread_area')
 
                 comment_list = get_comment(page_soup, 'commentthread_comment_text')
                 bad_rep = get_rep('bad', comment_list)
                 good_rep = get_rep('good', comment_list)
 
+                # Combine summary and comment_list
+                summary = get_summary(page_soup, 'profile_summary')
+                summary += ' '.join(comment_list)
+                fetch_dict['summary'] = string_clean(summary)
+
+                # Assign bot labels for testing, since rep feature is highly correlated to bot
                 if fetch_dir == TEST_DIR:
                     if bad_rep == 0 and good_rep > 1:
                         fetch_dict['bot'] = 0
                     else:
                         fetch_dict['bot'] = 1
 
-                #word_num = calc_num(fetch_dict['summary'])
-                #term_freq = calc_tf(word_num)
-                #print(term_freq)
-                #idf = calc_idf([word_num])
-                #print(idf)
-                #exit()
+                steam_dicts.append(fetch_dict)
 
-                steam_data.append(dict2list(fetch_dict))
+        # Calculate TF-IDF
+        document_list = list()
+
+        print("Creating term_freq key for each profile")
+        for item_dict in steam_dicts:
+            # Add term frequency key
+            word_dict = calc_num(item_dict['summary'])
+            term_freq_dict = calc_tf(word_dict)
+            item_dict['term_freq'] = term_freq_dict
+            # Add to total document list
+            document_list.append(word_dict)
+
+        if len(document_list) != 0:
+            print("Adding tfidf_%%s key for each profile")
+            # THIS PART IS TOO MEMORY INTENSIVE, FIND A BETTER WAY
+
+            all_keys = set().union(*document_list)
+
+            idf_dict = calc_idf(document_list)
+
+            for item_dict in steam_dicts:
+                # Store TF-IDF calculation
+                for word in all_keys:
+                    new_key = 'tfidf_%s' % word
+                    if word in item_dict['term_freq']:
+                        item_dict[new_key] = item_dict['term_freq'][word] * idf_dict[word]
+                    else:
+                        item_dict[new_key] = 0.00001
+
+                # Remove term frequency from dict
+                item_dict.pop('term_freq', None)
+        else:
+            print("Skipping TF-IDF because documents do not exist")
+
+        # Convert dictionary to list before appending to data
+        for item_dict in steam_dicts:
+            steam_data.append(dict2list(item_dict))
 
         print('--- %0.4f sec --- Total time' % (time.time() - benchmark_time))
 

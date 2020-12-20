@@ -13,30 +13,34 @@ def get_color(item_in) -> str:
     if item_in.post_time == 'NULL':
         return '000000'
 
+    # Colors for multitrade (in testing phase)
+    elif item_in.is_multitrade == True:
+        return 'FF0000'
+
     # Colors for new items
     elif item_in.is_new == True:
         post_time = datetime.strptime(item_in.post_time, TIME_FORMAT)
         time_ago = datetime.now() - post_time
-        if time_ago < timedelta(minutes=10):
+        if time_ago < timedelta(minutes=5):
             return 'FFFF00'
-        elif time_ago < timedelta(minutes=30):
+        elif time_ago < timedelta(minutes=15):
             return 'CCCC00'
-        elif time_ago < timedelta(hours=1):
-            return '999900'
-        elif time_ago < timedelta(hours=2):
-            return '666600'
+        elif time_ago < timedelta(hours=30):
+            return '404040' #'999900'
+        elif time_ago < timedelta(hours=60):
+            return '202020' #'666600'
         else:
-            return '333300'
+            return '000000' #'333300'
 
     # Colors for old items
     else:
         post_time = datetime.strptime(item_in.post_time, TIME_FORMAT)
         time_ago = datetime.now() - post_time
-        if time_ago < timedelta(minutes=30):
+        if time_ago < timedelta(minutes=15):
             return '606060'
-        elif time_ago < timedelta(hours=1):
+        elif time_ago < timedelta(hours=30):
             return '404040'
-        elif time_ago < timedelta(hours=2):
+        elif time_ago < timedelta(hours=60):
             return '202020'
         else:
             return '000000'

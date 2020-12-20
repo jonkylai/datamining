@@ -149,7 +149,7 @@ def get_container(type_in: str, soup_in: BeautifulSoup, link_in: str, time_in: s
             # Assign item link with filter search of zero
             container_list[-1]['item_link'] = '%s%s%s' % ( BASE_URL,
                                                            get_text_between(line, 'href=\"', '\">'),
-                                                           '&filterSearchType=0' )
+                                                           '&filterSearchType=0&filterPlatform%5B%5D=1' )
 
         # Rarity keyword
         if 'rlg-item__gradient' in line:

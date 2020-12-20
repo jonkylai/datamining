@@ -1,4 +1,4 @@
-from RLUtil import MAX_VALUE, MAX_ITEMS, DAY_THRESHOLD, TIME_FORMAT
+from RLUtil import MAX_VALUE, MAX_ITEMS, HOUR_THRESHOLD, TIME_FORMAT
 from RLExport import get_color
 
 from pandas import DataFrame
@@ -88,25 +88,23 @@ class ItemDatabase:
             # Loop over dictionaries for cost and price
             for key in user_dict:
                 # Loop over lists in dictionary
-                for i in range(len(user_dict[key])):
+                for i in range(len(user_dict[key])-1, -1, -1):
 
                     # Store description list and check username
                     if user_dict[key][i].username == username_in:
                         # Save link and replace cost or price for printing
                         removed_link = user_dict[key][i].post_link
 
-                        # Nullify key
-                        if user_dict is self.cost_dict:
-                            user_dict[key][i] = self.null_cost
-                        else:
-                            user_dict[key][i] = self.null_price
+                        # Delete item
+                        del user_dict[key][i]
 
         # Only print if username found
         if removed_link is not False:
             print('SPAM BOT: %s flagged as a bot %s' % (username_in, removed_link))
 
+
     def remove_old(self) -> None:
-        """ Removes any posts that are DAY_THRESHOLD days old
+        """ Removes any posts that are HOUR_THRESHOLD days old
             Old posters are not likely to respond and """
         remove_count = 0
 
@@ -117,24 +115,21 @@ class ItemDatabase:
             # Loop over dictionaries for cost and price
             for key in user_dict:
 
-                # Loop over index of list
-                for i in range(len(user_dict[key])):
+                # Loop from last to first index
+                for i in range(len(user_dict[key])-1, -1, -1):
 
                     # Get post time and convert it
                     post_time = user_dict[key][i].post_time
                     if post_time != 'NULL':
                         post_time = datetime.strptime(post_time, TIME_FORMAT)
 
-                        # Nullify key if post is too old
-                        if post_time + timedelta(days=DAY_THRESHOLD) < datetime.now():
+                        # Delete item if post is too old
+                        if post_time + timedelta(hours=HOUR_THRESHOLD) < datetime.now():
+                            del user_dict[key][i]
                             remove_count += 1
-                            if user_dict is self.cost_dict:
-                                user_dict[key][i] = self.null_cost
-                            else:
-                                user_dict[key][i] = self.null_price
 
         if remove_count > 0:
-            print('%i items older than %i days have been deleted' % (remove_count, DAY_THRESHOLD))
+            print('%i items older than %i hours have been deleted' % (remove_count, HOUR_THRESHOLD))
 
     def create_df(self) -> DataFrame:
         """ Creates DataFrame by combining dictionaries

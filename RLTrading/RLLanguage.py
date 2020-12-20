@@ -1,5 +1,27 @@
 from RLDatabase import ItemDatabase, SingleItem
-from RLUtil import string_clean, MAX_VALUE
+from RLUtil import string_clean, EXCLUDE_LIST, COLOR_LIST, NCC_LIST, NCU_LIST, NCR_LIST, NCVR_LIST, NCI_LIST, NCE_LIST, MAX_VALUE
+
+
+""" Define dictionary for predefined NC classifications """
+NC_TYPE = ['Common', 'Uncommon', 'Rare', 'Very-Rare', 'Import', 'Exotic']
+NC_LIST = [NCC_LIST, NCU_LIST, NCR_LIST, NCVR_LIST, NCI_LIST, NCE_LIST]
+NC_DICT = dict()
+for i, nc_type in enumerate(NC_TYPE):
+    for nc_item in NC_LIST[i]:
+        # Generates the exact item_name after the string has been cleaned and titled
+        key = 'Non-Crate %s Offer %s' % ( nc_type.replace('-',' '), nc_type )
+
+        # Add key if not initialized
+        if key not in NC_DICT.keys():
+            NC_DICT[key] = list()
+
+        # Add colored version to all NC items
+        for color in COLOR_LIST:
+            NC_DICT[key].append( '%s %s %s' % (nc_item, color, nc_type) )
+
+""" Words to indicate the desire for an NC trade
+    lower() already casted on comment """
+NC_KEYWORDS = ['non crate', 'non-crate', 'ncr', 'ncvr', 'nci', 'nce']
 
 
 def lexical_diversity(text_in: str) -> float:
@@ -23,8 +45,21 @@ def container2item(container_in: dict) -> SingleItem:
     return item_out
 
 
+def add_list(list_in: list, item_in: SingleItem) -> None:
+    """ Appends to list_in while double adding if NC """
+    list_in.append(item_in)
+
+    for key in NC_DICT.keys():
+        if item_in.item_name in NC_DICT[key]:
+            # Assigns NC traits before re-appending
+            item_in.item_name = key
+            item_in.is_multitrade = True
+            list_in.append(item_in)
+
+
 def get_item(database_in: ItemDatabase, want_container: list, has_container: list) -> (list, list):
-    """ Processes the poster's intentions to get the inherent value of an item """
+    """ The main driver that does everything for this file
+        Processes the poster's intentions to get the inherent value of an item """
     cost_list = list()
     price_list = list()
 
@@ -53,17 +88,30 @@ def get_item(database_in: ItemDatabase, want_container: list, has_container: lis
             # Assign values to item
             poster_item = container2item(container[i])
             poster_item.item_value = round(value, 1)
+            comment = poster_item.comment.lower()
+
+            # Check if NC is desired, and change item_name to NC if it is
+            if container is has_container:
+                if 'not ' in comment:
+                    break
+                for nc_keyword in NC_KEYWORDS:
+                    if nc_keyword in comment:
+                        # Last word will always be type, so use this to associate to NC type
+                        original_type = poster_item.item_name.split()[-1]
+                        for key in NC_DICT.keys():
+                            if original_type in key:
+                                poster_item.item_name = key
 
             # Exclude certain types of items before appending
-            if 'Offer' not in poster_item.item_name and poster_item.item_value != 1:
+            if poster_item.item_name not in EXCLUDE_LIST and poster_item.item_value != 1:
                 if container is has_container:
-                    cost_list.append(poster_item)
+                    add_list(cost_list, poster_item)
                 elif container is want_container:
                     price_list.append(poster_item)
 
     # Requests for single 1:N trade or one each trade
     elif len(has_container) == 1 and has_container[0]['name'] == 'Credits':
-        comment = has_container[0]['comment']
+        comment = has_container[0]['comment'].lower()
         divide_amount = 1
 
         if 'all' in comment:
@@ -74,13 +122,24 @@ def get_item(database_in: ItemDatabase, want_container: list, has_container: lis
             poster_item = container2item(want_container[i])
             poster_item.item_value = round(value, 1)
 
+            # Check if NC is desired, and change item_name to NC if it is
+            for nc_keyword in NC_KEYWORDS:
+                if 'not ' in comment:
+                    break
+                if nc_keyword in comment:
+                    # Last word will always be type, so use this to associate to NC type
+                    original_type = poster_item.item_name.split()[-1]
+                    for key in NC_DICT.keys():
+                        if original_type in key:
+                            poster_item.item_name = key
+
             # Exclude certain types of items before appending
-            if 'Offer' not in poster_item.item_name and poster_item.item_value != 1:
+            if poster_item.item_name not in EXCLUDE_LIST and poster_item.item_value != 1:
                 price_list.append(poster_item)
 
     # Requests for single 1:N trade or one each trade
     elif len(want_container) == 1 and want_container[0]['name'] == 'Credits':
-        comment = want_container[0]['comment']
+        comment = want_container[0]['comment'].lower()
         divide_amount = 1
 
         if 'all' in comment:
@@ -92,8 +151,8 @@ def get_item(database_in: ItemDatabase, want_container: list, has_container: lis
             poster_item.item_value = round(value, 1)
 
             # Exclude certain types of items before appending
-            if 'Offer' not in poster_item.item_name and poster_item.item_value != 1:
-                cost_list.append(poster_item)
+            if poster_item.item_name not in EXCLUDE_LIST and poster_item.item_value != 1:
+                add_list(cost_list, poster_item)
 
     else:
         # Add NLP and others methods later

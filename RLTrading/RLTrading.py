@@ -97,7 +97,7 @@ class RLTrades:
             self.df = database.create_df()
 
             # Remove all possible spam and recreate dataframe
-            database = spam_filter(database, self.df)
+            spam_filter(database, self.df)
             self.df = database.create_df()
             benchmark_recorded = print_time('spam_filter()', benchmark_time, benchmark_recorded)
 
@@ -199,8 +199,8 @@ def main():
         # Manual input
         user_query = single_query
         user_query.url = user_input
-        if 'filterPlatform=1' not in user_query.url:
-            print('ERROR: Manual input requires steam platform string filterPlatform=1')
+        if 'filterPlatform' not in user_query.url:
+            print('ERROR: Manual input requires string filterPlatform')
             exit()
 
     # Do everything else
