@@ -7,10 +7,12 @@ from RLSpamFilter import spam_filter
 from RLMine import mine_steam
 from SavedQueries import all_queries, single_query
 
-import requests
 import time
 import re
 import pickle
+
+from selenium import webdriver
+import chromedriver_binary  # Make sure this version matches installed version
 
 from datetime import datetime
 from pandas import DataFrame
@@ -55,13 +57,23 @@ class RLTrades:
         while True:
             # Get site data
             benchmark_time = time.time()
-            page = requests.get(user_url)
-            benchmark_recorded = print_time(page.url, benchmark_time, benchmark_recorded)
+            #page = requests.get(user_url)
+            options = webdriver.ChromeOptions()
+            options.add_argument('headless')
+            options.add_experimental_option("excludeSwitches", ["enable-automation"])
+            options.add_experimental_option('useAutomationExtension', False)
+            driver = webdriver.Chrome(options=options)
+            driver.get(user_url)
+            page = driver.page_source
+            benchmark_recorded = print_time(user_url, benchmark_time, benchmark_recorded)
 
-            page_soup = BeautifulSoup(page.content, 'html.parser')
+            page_soup = BeautifulSoup(page, 'html.parser')
 
             # Parse by individual post
             user_list = page_soup.find_all('div', {'class': 'rlg-trade'})
+            if not user_list:
+                print("ERROR: user_list is empty")
+                exit()
 
             # Loop over each item
             for user_soup in user_list:
