@@ -22,7 +22,7 @@ def get_color(item_in) -> str:
         post_time = datetime.strptime(item_in.post_time, TIME_FORMAT)
         time_ago = datetime.now() - post_time
         if time_ago < timedelta(minutes=5):
-            return 'FFFF00'
+            return 'DDDD00'
         elif time_ago < timedelta(minutes=15):
             return 'CCCC00'
         elif time_ago < timedelta(hours=30):

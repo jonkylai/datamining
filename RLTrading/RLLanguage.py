@@ -95,7 +95,7 @@ def get_item(database_in: ItemDatabase, want_container: list, has_container: lis
                 if 'not ' in comment:
                     break
                 for nc_keyword in NC_KEYWORDS:
-                    if nc_keyword in comment:
+                    if nc_keyword in comment and ("no" not in comment and "none" not in comment):
                         # Last word will always be type, so use this to associate to NC type
                         original_type = poster_item.item_name.split()[-1]
                         for key in NC_DICT.keys():
@@ -126,7 +126,7 @@ def get_item(database_in: ItemDatabase, want_container: list, has_container: lis
             for nc_keyword in NC_KEYWORDS:
                 if 'not ' in comment:
                     break
-                if nc_keyword in comment:
+                if nc_keyword in comment and ("no" not in comment and "none" not in comment):
                     # Last word will always be type, so use this to associate to NC type
                     original_type = poster_item.item_name.split()[-1]
                     for key in NC_DICT.keys():
