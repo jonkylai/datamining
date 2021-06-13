@@ -9,7 +9,7 @@ import time
 # Number of posts to store per repeated item
 MAX_ITEMS = 5
 # Age to remove old posts
-HOUR_THRESHOLD = 3
+HOUR_THRESHOLD = 6
 # Maximum value of item
 MAX_VALUE = 99999
 
@@ -321,4 +321,27 @@ NCE_LIST = [
     'Tunica',
     'Veloce',
     'Vortex'
+]
+
+IGNORE_LIST = [
+    'Discotheque Exotic',
+    'Infinium Exotic',
+    'Fgsp Exotic',
+    'Kalos Exotic',
+    'Lobo Exotic',
+    'Equalizer Exotic',
+    'Turbine Exotic',
+    'Pyrrhos Exotic',
+    'Roulette Exotic',
+    'Clockwork Exotic',
+    'Raijin Exotic',
+    'Draco Exotic',
+    'Ara-51 Exotic',
+    'Zowie Exotic',
+    'Balla-Carr Exotic',
+    'Hikari P5 Exotic',
+    'Dynamo Exotic',
+    'Gernot Exotic',
+    'Zowie Exotic',
+    'Zomba Exotic'
 ]

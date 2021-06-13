@@ -1,4 +1,4 @@
-from RLUtil import MAX_VALUE, MAX_ITEMS, HOUR_THRESHOLD, TIME_FORMAT
+from RLUtil import MAX_VALUE, MAX_ITEMS, IGNORE_LIST, HOUR_THRESHOLD, TIME_FORMAT
 from RLExport import get_color
 
 from pandas import DataFrame
@@ -59,10 +59,13 @@ class ItemDatabase:
 
     def is_duplicate(self, dict_in: dict, name_in: str, value_in: int, link_in: str) -> bool:
         """ Checks if an item already exists
-            This function allows only the post link name to be compared since the time will always vary """
+            This function allows only the post link name to be compared since the time will always vary
+            Checks if an item is in IGNORE_LIST """
         # Compare only 2 fields rather than all of them
         for item in dict_in[name_in]:
             if value_in == item.item_value and link_in == item.post_link:
+                return True
+            if name_in in IGNORE_LIST:
                 return True
         return False
 
@@ -100,7 +103,7 @@ class ItemDatabase:
 
         # Only print if username found
         if removed_link is not False:
-            print('SPAM BOT: %s flagged as a bot %s' % (username_in, removed_link))
+            print('    SPAM BOT: %s flagged as a bot %s' % (username_in, removed_link))
 
 
     def remove_old(self) -> None:

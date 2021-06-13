@@ -55,22 +55,31 @@ class RLTrades:
 
         # Data mine in monitor mode by doing an infinite loop until ctrl+c
         while True:
-            # Get site data
-            benchmark_time = time.time()
-            #page = requests.get(user_url)
-            options = webdriver.ChromeOptions()
-            options.add_argument('headless')
-            options.add_experimental_option("excludeSwitches", ["enable-automation"])
-            options.add_experimental_option('useAutomationExtension', False)
-            driver = webdriver.Chrome(options=options)
-            driver.get(user_url)
-            page = driver.page_source
-            benchmark_recorded = print_time(user_url, benchmark_time, benchmark_recorded)
+            # Get site data, try multiple times before quitting
+            for tries in range(30):
+                #page = requests.get(user_url) # Alternate method instead of webdriver
 
-            page_soup = BeautifulSoup(page, 'html.parser')
+                benchmark_time = time.time()
+                options = webdriver.ChromeOptions()
+                options.add_argument('headless')
+                options.add_experimental_option("excludeSwitches", ["enable-automation"])
+                options.add_experimental_option('useAutomationExtension', False)
+                driver = webdriver.Chrome(options=options)
+                driver.get(user_url)
+                page = driver.page_source
+                benchmark_recorded = print_time(user_url, benchmark_time, benchmark_recorded)
 
-            # Parse by individual post
-            user_list = page_soup.find_all('div', {'class': 'rlg-trade'})
+                page_soup = BeautifulSoup(page, 'html.parser')
+
+                # Parse by individual post
+                user_list = page_soup.find_all('div', {'class': 'rlg-trade'})
+
+                # Quit if data is retrieved
+                if user_list:
+                    break
+                else:
+                    print('Retrying in %i seconds' % SLEEP_TIME)
+
             if not user_list:
                 print("ERROR: user_list is empty")
                 exit()
