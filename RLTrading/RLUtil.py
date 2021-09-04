@@ -343,5 +343,17 @@ IGNORE_LIST = [
     'Dynamo Exotic',
     'Gernot Exotic',
     'Zowie Exotic',
-    'Zomba Exotic'
+    'Zomba Exotic',
+    'Looper Exotic',
+    'Centro Exotic',
+    'Reevrb Exotic',
+    'Santa Fe Exotic',
+    'Pulsus Exotic',
+    'Hypnotik Exotic',
+    'Reactor Exotic',
+    'Photon Exotic',
+    'K2 Exotic',
+    'Chrono Exotic',
+    'Zefram Exotic',
+    'Fgsp Exotic'
 ]
