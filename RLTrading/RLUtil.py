@@ -9,7 +9,7 @@ import time
 # Number of posts to store per repeated item
 MAX_ITEMS = 5
 # Age to remove old posts
-HOUR_THRESHOLD = 6
+HOUR_THRESHOLD = 72
 # Maximum value of item
 MAX_VALUE = 99999
 
@@ -84,7 +84,9 @@ EXCLUDE_LIST = [
     'Rare Offer Rare',
     'Very Rare Offer Very-Rare',
     'Import Offer Import',
-    'Exotic Offer Exotic'
+    'Exotic Offer Exotic',
+    'Overpay Uncommon',
+    'Placeholder Uncommon'
 ]
 
 COLOR_LIST = [
@@ -324,6 +326,7 @@ NCE_LIST = [
 ]
 
 IGNORE_LIST = [
+    'Overpay Uncommon',
     'Discotheque Exotic',
     'Infinium Exotic',
     'Fgsp Exotic',
